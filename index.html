@@ -204,6 +204,15 @@ tfoot td{font-weight:600;border-top:1px solid var(--axis)}
 .preview ul{margin:4px 0 0;padding-left:18px}
 .preview strong{color:var(--ink)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
+body:not(.live) .live-only{display:none!important}
+body.live .demo-only{display:none!important}
+#gate{display:none;padding:28px 0}
+body.gated #gate{display:block}
+body.gated .tabs,body.gated #filters,body.gated main{display:none}
+body.gated .top>*:not(h1){display:none!important}
+.gatecard{max-width:420px;margin:0 auto}
+.gatecard h2{font-size:18px;font-weight:600;margin-bottom:4px}
+.gatecard .form{grid-template-columns:1fr}
 /* guide */
 .gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
 .gloss .card h3{font-size:15px;font-weight:600;margin-bottom:6px}
@@ -224,14 +233,30 @@ footer{margin-top:28px;font-size:13px;color:var(--ink-2)}
 <div class="wrap">
   <header class="top">
     <h1>Family portfolio</h1>
-    <span class="pill">Demo · sample data</span>
+    <span class="pill demo-only">Demo · sample data</span>
     <span class="spacer"></span>
     <span class="livestat"><span class="dot" id="livedot"></span><span id="livetext">Simulated prices</span></span>
     <button class="btn small ghost" id="pause" type="button">Pause prices</button>
+    <span class="pill live-only" id="who"></span>
+    <button class="btn small ghost live-only" id="pwbtn" type="button">Password</button>
+    <button class="btn small ghost live-only" id="signout" type="button">Sign out</button>
     <button class="btn" id="import" type="button">Import activity sheet</button>
     <button class="btn primary" id="add" type="button">Add a transaction</button>
   </header>
-  <div class="notice"><span><strong>This is a demo.</strong> The family, the positions and every price here are made up, and prices move on a simulator. It shows the layout and the analysis. To try it with your own portfolio, press Import activity sheet. The live site will use real prices from Yahoo Finance.</span></div>
+  <div class="notice demo-only"><span><strong>This is a demo.</strong> The family, the positions and every price here are made up, and prices move on a simulator. It shows the layout and the analysis. To try it with your own portfolio, press Import activity sheet. The live site will use real prices from Yahoo Finance.</span></div>
+
+  <section id="gate">
+    <div class="card gatecard">
+      <h2 id="g-title">Sign in</h2>
+      <p class="sub" id="g-msg" style="margin:0"></p>
+      <form class="form" id="signin" novalidate hidden>
+        <label class="field">Email<input id="g-email" type="email" autocomplete="username" required></label>
+        <label class="field">Password<input id="g-pass" type="password" autocomplete="current-password" required></label>
+        <div class="err" id="g-err" role="alert"></div>
+        <div class="actions"><button class="btn primary" type="submit" id="g-go">Sign in</button></div>
+      </form>
+    </div>
+  </section>
 
   <nav class="tabs" aria-label="Sections">
     <a href="#overview" data-v="overview">Overview</a>
@@ -260,7 +285,7 @@ footer{margin-top:28px;font-size:13px;color:var(--ink-2)}
         <div class="card c8">
           <div class="card-h"><h2>How today's mix has moved</h2><button class="info" data-i="perf" type="button">i</button><span class="spacer"></span><button class="btn small ghost" data-table="perf" type="button">Show as table</button></div>
           <p class="sub" id="ov-perf-sub"></p>
-          <div class="legend"><span><i class="key-line" style="background:var(--s1)"></i>Your holdings</span><span><i class="key-line" style="background:var(--deemph)"></i>Global share index (simulated)</span></div>
+          <div class="legend"><span><i class="key-line" style="background:var(--s1)"></i>Your holdings</span><span><i class="key-line" style="background:var(--deemph)"></i><span id="bench-name">Global share index (simulated)</span></span></div>
           <div class="chart" id="ov-perf"></div>
         </div>
         <div class="card c4">
@@ -302,7 +327,7 @@ footer{margin-top:28px;font-size:13px;color:var(--ink-2)}
           <div><div class="card-h" style="margin:0"><h2>Activity sheet</h2><button class="info" data-i="activity" type="button">i</button></div><p class="sub" style="margin:2px 0 0" id="ac-sum"></p></div>
           <span style="flex:1"></span>
           <button class="btn small" type="button" id="ac-copy">Copy as CSV</button>
-          <button class="btn small" type="button" id="ac-reset">Reset to sample data</button>
+          <button class="btn small demo-only" type="button" id="ac-reset">Reset to sample data</button>
         </div>
         <div class="tablewrap" id="ac-table"></div>
         <p class="sub" style="margin:12px 0 0">Every figure on the other tabs is worked out from these rows. Add a row and everything updates.</p>
@@ -364,7 +389,18 @@ footer{margin-top:28px;font-size:13px;color:var(--ink-2)}
             <li>The filter row at the top changes every number on every tab. Press the small <em>i</em> next to any figure for an explanation.</li>
           </ul>
         </div>
-        <div class="card c6 prose">
+        <div class="card c6 prose live-only">
+          <div class="card-h"><h2>Where the numbers come from</h2></div>
+          <ul>
+            <li>Prices, exchange rates and a year of daily price history come from Yahoo Finance. They refresh about once a minute while the page is open.</li>
+            <li>Prices can lag the market by around 15 minutes, depending on the exchange. Funds are priced once a day.</li>
+            <li>Today's change compares the latest price with the close of the previous trading day.</li>
+            <li>Type, sector and region are taken from Yahoo Finance where it has them. Press Edit on a holding to correct them.</li>
+            <li>What was paid for holdings in other currencies is converted into pounds at today's exchange rate.</li>
+            <li>The activity sheet is shared: everyone who signs in sees the same rows and can add to them.</li>
+          </ul>
+        </div>
+        <div class="card c6 prose demo-only">
           <div class="card-h"><h2>What is simulated in this demo</h2></div>
           <ul>
             <li>The family (Alex, Sam and Jo), their positions and what they paid.</li>
@@ -439,10 +475,41 @@ footer{margin-top:28px;font-size:13px;color:var(--ink-2)}
   </div>
 </div>
 
+<div class="overlay" id="ovl3">
+  <form class="dialog" id="pwform" novalidate style="width:min(420px,100%)">
+    <h2>Change your password</h2>
+    <p class="sub" style="margin:0">Pick a new password of at least 8 characters.</p>
+    <div class="form" style="grid-template-columns:1fr">
+      <label class="field">New password<input id="p-new" type="password" autocomplete="new-password" minlength="8" required></label>
+      <div class="err" id="p-err" role="alert"></div>
+      <div class="actions"><button class="btn" type="button" id="p-cancel">Cancel</button><button class="btn primary" type="submit">Save password</button></div>
+    </div>
+  </form>
+</div>
+<div class="overlay" id="ovl4">
+  <form class="dialog" id="edform" novalidate style="width:min(480px,100%)">
+    <h2>Edit holding details</h2>
+    <p class="sub" style="margin:0" id="e-sym"></p>
+    <div class="form">
+      <label class="field full">Name<input id="e-name" maxlength="80" autocomplete="off"></label>
+      <label class="field">Type<select id="e-type"><option>Share</option><option>ETF</option><option>Investment trust</option><option>Fund</option></select></label>
+      <label class="field">Region<input id="e-region" list="e-regions" maxlength="40" autocomplete="off"><datalist id="e-regions"></datalist></label>
+      <label class="field full">Sector<input id="e-sector" list="e-sectors" maxlength="40" autocomplete="off"><datalist id="e-sectors"></datalist></label>
+      <div class="err full" id="e-err" role="alert"></div>
+      <div class="actions full"><button class="btn" type="button" id="e-cancel">Cancel</button><button class="btn primary" type="submit">Save</button></div>
+    </div>
+  </form>
+</div>
+
 <script>
 "use strict";
 /* ============ SETTINGS: the things you are most likely to change ============ */
 const SETTINGS={
+  // LIVE MODE: paste your Supabase project's two details between the quotes. Leave both empty to run the demo with made-up prices.
+  supabaseUrl:"",                                       // looks like "https://abcdefghijkl.supabase.co"
+  supabaseKey:"",                                       // the project's PUBLISHABLE key (starts "sb_publishable_"). Never the secret key.
+  refreshSeconds:60,                                    // live mode: how often prices are fetched again
+  benchmark:{symbol:"VWRL.L",name:"World shares (Vanguard FTSE All-World ETF)"},   // live mode: the yardstick on the performance chart
   accounts:["ISA","SIPP","GIA","LISA","Junior ISA"],   // account types offered in the forms, in display order
   defaultPeople:["Alex","Sam","Jo"],                    // the sample family (demo only)
   tickSeconds:4,                                        // how often prices refresh on screen
@@ -454,6 +521,8 @@ const SETTINGS={
   betaLow:.8,      betaHigh:1.2,                        // beta: below = dampens the market, above = amplifies it
   corrLow:.3,      corrHigh:.6                          // average correlation: below = well mixed, above = moves as one
 };
+const LIVE=!!(SETTINGS.supabaseUrl&&SETTINGS.supabaseKey);   // true once the two Supabase details are filled in
+let ready=!LIVE;                                             // live mode: becomes true after sign-in, once prices have loaded
 
 /* ============ helpers ============ */
 const NS="http://www.w3.org/2000/svg";
@@ -516,7 +585,7 @@ const SAMPLE=[
 ];
 
 /* ============ simulated history (the live site replaces this with real price history) ============ */
-const N=262;               // daily closes kept
+let N=262;                 // daily closes kept
 const R={}, CLOSE={};      // R[t][i] = return in pounds from close i-1 to i
 let BENCH=[], FXC=[], DATES=[];
 const FACT={uk:[],bond:[],sec:{}};
@@ -544,7 +613,11 @@ function buildSeries(ins){ // a year of made-up daily prices for one instrument,
 })();
 
 /* ============ live prices (simulated feed; the live site swaps this for Yahoo Finance) ============ */
-const live={px:{},prev:{},fx:1.30,fxPrev:1.30,moved:{},at:new Date(),paused:false};
+const live={px:{},prev:{},fx:1.30,fxPrev:1.30,fxm:{},fxmPrev:{},moved:{},at:new Date(),paused:false,err:null};
+// exchange rates are "units of that currency per pound"; live.fx is the dollar rate
+const fxNow=c=>c==="GBP"?1:c==="USD"?live.fx:(live.fxm[c]||1);
+const fxPrev=c=>c==="GBP"?1:c==="USD"?live.fxPrev:(live.fxmPrev[c]||1);
+const ccySym=c=>({GBP:"£",USD:"$",EUR:"€"})[c]||c+" ";
 function initLivePx(t){const cl=CLOSE[t],g=gaussOf(mulberry32(hashStr("live:"+t)));
   if(INS[t].type==="Fund"){live.px[t]=cl[N-1];live.prev[t]=cl[N-2];}
   else{live.prev[t]=cl[N-1];live.px[t]=cl[N-1]*(1+g()*.006);}}
@@ -574,6 +647,7 @@ let people=[], txns=[], positions=[], nextId=1;
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return iso(d)};
 const dateOf=s=>new Date(s+"T12:00:00");
+const ord=x=>x.seq||x.id;   // the order rows were entered in, used to break ties on the same date
 function seed(){ // turn the SAMPLE positions into a made-up activity sheet
   people=[...SETTINGS.defaultPeople];txns=[];
   SAMPLE.forEach((s,i)=>{const px=INS[s[0]].px0*s[4],n=1+i%3,base=90+(i*53)%500,each=Math.floor(s[3]/n);
@@ -583,7 +657,7 @@ function seed(){ // turn the SAMPLE positions into a made-up activity sheet
 }
 function derive(){ // average-cost method: a sale removes shares at the average price paid so far
   const m=new Map();
-  [...txns].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id).forEach(x=>{
+  [...txns].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:ord(a)-ord(b)).forEach(x=>{
     const k=x.t+"|"+x.person+"|"+x.account;let p=m.get(k);
     if(!p){p={id:k,t:x.t,person:x.person,account:x.account,qty:0,tot:0,first:x.date,buys:0,realised:0};m.set(k,p)}
     if(x.side==="sell"){const q=Math.min(x.qty,p.qty),avg=p.qty?p.tot/p.qty:0;p.realised+=q*(x.price-avg);p.tot-=q*avg;p.qty-=q;if(p.qty<1e-9){p.qty=0;p.tot=0}}
@@ -598,13 +672,13 @@ function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"null");if(d&&
   (d.accounts||[]).forEach(a=>{if(!ACCOUNTS.includes(a))ACCOUNTS.push(String(a))});
   (d.made||[]).forEach(m=>ensureInstrument(String(m[0]),+m[1],m[2]==="USD"?"USD":"GBP"));
   txns.forEach(x=>ensureInstrument(x.t,x.price));nextId=Math.max(0,...txns.map(x=>x.id||0))+1;return true}}catch(e){}return false}
-if(!load())seed();
+if(!LIVE&&!load())seed();
 derive();
 
 /* ============ formatting ============ */
 function money(g,o){o=o||{};const usd=state.ccy==="USD";const v=usd?g*live.fx:g;const dp=o.dp||0;const a=Math.abs(v).toLocaleString("en-GB",{minimumFractionDigits:dp,maximumFractionDigits:dp});return(v<0?"−":(o.sign&&v>0?"+":""))+(usd?"$":"£")+a}
 function pct(x,dp,sign){dp=dp==null?1:dp;const v=x*100;return(v<0?"−":(sign&&v>0?"+":""))+Math.abs(v).toFixed(dp)+"%"}
-function nativePx(px,ccy){if(ccy==="USD")return"$"+px.toFixed(2);if(px<10)return(px*100).toFixed(1)+"p";return"£"+px.toFixed(2)}
+function nativePx(px,ccy){if(ccy==="GBP")return px<10?(px*100).toFixed(1)+"p":"£"+px.toFixed(2);return ccySym(ccy)+px.toFixed(2)}
 const fmtDate=(d,y)=>d.toLocaleDateString("en-GB",y?{day:"numeric",month:"short",year:"numeric"}:{day:"numeric",month:"short"});
 const PERIOD={21:"1 month",63:"3 months",126:"6 months",252:"1 year"};
 function delta(v,text){const cls=v>1e-9?"up":v<-1e-9?"down":"flat";return H("span",{class:"delta "+cls},(v>1e-9?"▲ ":v<-1e-9?"▼ ":"")+text)}
@@ -612,14 +686,14 @@ function delta(v,text){const cls=v>1e-9?"up":v<-1e-9?"down":"flat";return H("spa
 /* ============ analysis ============ */
 function scope(){return positions.filter(p=>(state.person==="all"||p.person===state.person)&&(state.account==="all"||p.account===state.account))}
 function analyse(){
-  const rows=scope().map(p=>{const ins=INS[p.t];const k=ins.ccy==="USD"?1/live.fx:1,kp=ins.ccy==="USD"?1/live.fxPrev:1;
+  const rows=scope().map(p=>{const ins=INS[p.t];const k=1/fxNow(ins.ccy),kp=1/fxPrev(ins.ccy);
     const value=p.qty*live.px[p.t]*k,cost=p.qty*p.cost*k,prevV=p.qty*live.prev[p.t]*kp;
     return{p,ins,value,cost,gain:value-cost,gainPct:cost?value/cost-1:0,day:value-prevV,dayPct:live.px[p.t]/live.prev[p.t]-1,income:value*ins.y/100}});
   const total=sum(rows.map(r=>r.value)),cost=sum(rows.map(r=>r.cost)),day=sum(rows.map(r=>r.day)),income=sum(rows.map(r=>r.income));
   rows.forEach(r=>r.w=total?r.value/total:0);
   const tm=new Map();rows.forEach(r=>{let x=tm.get(r.p.t);if(!x){x={t:r.p.t,ins:r.ins,value:0,cost:0};tm.set(r.p.t,x)}x.value+=r.value;x.cost+=r.cost});
   const tick=[...tm.values()].sort((a,b)=>b.value-a.value);tick.forEach(x=>x.w=total?x.value/total:0);
-  const W=state.period,i0=N-W;const A={rows,total,cost,day,income,tick,W,gain:total-cost,gainPct:cost?total/cost-1:0,dayPct:(total-day)?day/(total-day):0};
+  const W=Math.min(state.period,N-1),i0=N-W;const A={rows,total,cost,day,income,tick,W,gain:total-cost,gainPct:cost?total/cost-1:0,dayPct:(total-day)?day/(total-day):0};
   if(!rows.length)return A;
   const rp=[],rb=[];for(let i=i0;i<N;i++){let s=0;for(const x of tick)s+=x.w*R[x.t][i];rp.push(s);rb.push(BENCH[i]);}
   A.rp=rp;A.rb=rb;A.dates=DATES.slice(i0-1);
@@ -643,8 +717,8 @@ function flags(A){
   if(sec)f.push({level:sec.w>=SETTINGS.sectorWarn?"warning":"good",t:sec.k+" is the biggest single-share sector at "+pct(sec.w),d:sec.w>=SETTINGS.sectorWarn?"Shares in one industry often rise and fall together.":"No one industry dominates the single shares."});
   const out=A.tick.filter(x=>x.rc>.08&&x.rc>1.5*x.w).sort((a,b)=>(b.rc-b.w)-(a.rc-a.w))[0];
   if(out)f.push({level:"warning",t:out.ins.n+" carries more risk than its size suggests",d:pct(out.w)+" of the value but "+pct(out.rc)+" of the ups and downs."});
-  const usd=sum(A.rows.filter(r=>r.ins.ccy==="USD").map(r=>r.w));
-  f.push({level:"note",t:pct(usd)+" is priced in US dollars",d:"These holdings also move when the pound rises or falls against the dollar."});
+  const fxw=sum(A.rows.filter(r=>r.ins.ccy!=="GBP").map(r=>r.w));
+  f.push({level:"note",t:pct(fxw)+" is priced in a currency other than pounds",d:"These holdings also move when the pound rises or falls against that currency."});
   return f;
 }
 const ICON={good:"✓",warning:"!",serious:"▲",note:"i"};
@@ -684,7 +758,7 @@ let popBtn=null;
 function closePop(){pop.style.display="none";if(popBtn)popBtn.setAttribute("aria-expanded","false");popBtn=null}
 function openPop(btn){const g=G[btn.dataset.i];if(!g)return;if(popBtn===btn){closePop();return}closePop();popBtn=btn;btn.setAttribute("aria-expanded","true");pop.textContent="";pop.append(H("h3",{text:g.h}),H("p",{text:g.w}),H("p",{text:g.r}));if(g.k)pop.append(H("p",{class:"thumb",text:g.k}));pop.style.display="block";const b=btn.getBoundingClientRect(),w=pop.offsetWidth,h=pop.offsetHeight;let L=Math.min(Math.max(8,b.left-20),innerWidth-w-8),T=b.bottom+8;if(T+h>innerHeight-8)T=Math.max(8,b.top-h-8);pop.style.left=L+"px";pop.style.top=T+"px"}
 document.addEventListener("click",e=>{const b=e.target.closest(".info");if(b){openPop(b);return}if(!e.target.closest("#pop"))closePop()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){closePop();closeForm();closeImport()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closePop();document.querySelectorAll(".overlay.open").forEach(o=>o.classList.remove("open"))}});
 addEventListener("scroll",closePop,{passive:true});
 const infoBtn=k=>H("button",{class:"info",type:"button","data-i":k,"aria-label":"What does "+G[k].h+" mean?","aria-expanded":"false"},"i");
 let toastTimer=null,undoFn=null;
@@ -755,7 +829,7 @@ const VIEWS={
   const who=(state.person==="all"?"Whole family":state.person)+(state.account==="all"?"":" · "+state.account);
   hero.append(H("div",{class:"label"},"Total value · "+who,infoBtn("total")),H("div",{class:"value",text:money(A.total)}),
     H("div",{class:"meta"},delta(A.day,money(A.day,{sign:true})+" ("+pct(A.dayPct,2,true)+")"),H("span",{text:"today"}),infoBtn("day")),
-    H("div",{class:"meta",style:"margin-top:10px"},H("span",{text:"£1 = $"+live.fx.toFixed(4)+" (simulated)"})));
+    H("div",{class:"meta",style:"margin-top:10px"},H("span",{text:"£1 = $"+live.fx.toFixed(4)+(LIVE?"":" (simulated)")})));
   const tl=$("ov-tiles");tl.textContent="";
   const accs=new Set(A.rows.map(r=>r.p.person+"/"+r.p.account)).size;
   tl.append(
@@ -764,7 +838,7 @@ const VIEWS={
     tile("c6","Holdings",null,String(A.tick.length),A.rows.length+" positions across "+accs+" account"+(accs===1?"":"s")),
     tile("c6",PERIOD[A.W]+" move, today's mix","perf",A.lev?pct(A.lev[A.lev.length-1]/100-1,1,true):"–",A.lb?"Index "+pct(A.lb[A.lb.length-1]/100-1,1,true):""));
   if(!A.rows.length){emptyInto("ov-perf","ov-who","ov-top");$("ov-flags").textContent="";$("ov-who-legend").textContent="";$("ov-perf-sub").textContent="";return}
-  $("ov-perf-sub").textContent="Last "+PERIOD[A.W]+" to yesterday's close. Both lines start at 100.";
+  $("ov-perf-sub").textContent="Last "+PERIOD[A.W]+(LIVE?" to the latest price.":" to yesterday's close.")+" Both lines start at 100.";
   const pe=$("ov-perf");
   if(state.tables.perf){pe.textContent="";const rows=[];for(let i=A.dates.length-1;i>=0;i-=5)rows.push([fmtDate(A.dates[i],true),A.lev[i].toFixed(1),A.lb[i].toFixed(1)]);pe.append(tableOf(["Week ending","Your holdings","Index"],rows))}
   else lineChart(pe,{dates:A.dates,label:"Your holdings against a global share index, both starting at 100",series:[{name:"Index",color:"var(--deemph)",values:A.lb,w:1.5},{name:"Your holdings",color:"var(--s1)",values:A.lev}],yFmt:v=>v.toFixed(v%1?1:0),tipFmt:v=>v.toFixed(1),base:100,endLabels:true});
@@ -791,21 +865,21 @@ const VIEWS={
   el.append(H("table",null,
     H("thead",null,H("tr",null,th("name","Holding"),th("person","Owner"),th("account","Account"),th("qty","Quantity",1),H("th",{class:"r",text:"Price"}),th("day","Today",1),th("value","Value",1),th("w","Weight",1),th("gain","Gain / loss",1),H("th",null,H("span",{style:"position:absolute;left:-9999px",text:"Remove"})))),
     H("tbody",null,rows.map(r=>{const mv=live.moved[r.p.t];return H("tr",null,
-      H("td",null,H("div",{class:"hname"},r.ins.n,r.ins.type!=="Share"?H("span",{class:"tag",text:r.ins.type}):null),H("div",{class:"hmeta",text:r.p.t+" · "+r.ins.ccy+(r.ins.type==="Fund"?" · priced daily":"")+(r.ins.made?" · demo price":"")+" · since "+fmtDate(dateOf(r.p.first),true)+(r.p.buys>1?" · "+r.p.buys+" buys":"")})),
+      H("td",null,H("div",{class:"hname"},r.ins.n,r.ins.type!=="Share"?H("span",{class:"tag",text:r.ins.type}):null),H("div",{class:"hmeta",text:r.p.t+" · "+r.ins.ccy+(r.ins.type==="Fund"?" · priced daily":"")+(r.ins.made?" · demo price":"")+(r.ins.noPrice?" · no price found":"")+" · since "+fmtDate(dateOf(r.p.first),true)+(r.p.buys>1?" · "+r.p.buys+" buys":"")})),
       H("td",{text:r.p.person}),H("td",{text:r.p.account}),
       H("td",{class:"r",text:r.p.qty.toLocaleString("en-GB",{maximumFractionDigits:4})}),
       H("td",{class:"r"+(mv?(mv>0?" tick-up":" tick-down"):""),text:nativePx(live.px[r.p.t],r.ins.ccy)}),
       H("td",{class:"r"},delta(r.dayPct,pct(r.dayPct,2,true))),
       H("td",{class:"r",text:money(r.value)}),H("td",{class:"r",text:pct(r.w)}),
       H("td",{class:"r"},delta(r.gain,money(r.gain,{sign:true})+" ("+pct(r.gainPct,1,true)+")")),
-      H("td",{class:"r"},H("button",{class:"x",type:"button","aria-label":"Remove "+r.ins.n+" ("+r.p.person+", "+r.p.account+")",onclick:()=>removePos(r.p.id)},"Remove")))})),
+      H("td",{class:"r",style:"white-space:nowrap"},LIVE?H("button",{class:"x",type:"button","aria-label":"Edit details of "+r.ins.n,onclick:()=>openEdit(r.p.t)},"Edit"):null,H("button",{class:"x",type:"button","aria-label":"Remove "+r.ins.n+" ("+r.p.person+", "+r.p.account+")",onclick:()=>removePos(r.p.id)},"Remove")))})),
     H("tfoot",null,H("tr",null,H("td",{text:"Total shown"}),H("td"),H("td"),H("td"),H("td"),H("td"),H("td",{class:"r",text:money(sum(rows.map(r=>r.value)))}),H("td",{class:"r",text:pct(sum(rows.map(r=>r.w)))}),H("td",{class:"r",text:money(sum(rows.map(r=>r.gain)),{sign:true})}),H("td")))));
  },
  allocation(A){
   if(!A.rows.length){emptyInto("al-type","al-ccy","al-sector","al-region");return}
   const TY={Share:"Single shares",ETF:"ETFs",Fund:"Funds","Investment trust":"Investment trusts"},CC={GBP:"Pounds (GBP)",USD:"US dollars (USD)"};
   const put=(id,fn)=>rankedBars($(id),groupBy(A,fn).map(g=>({name:g.k,w:g.w,value:g.value})),{money:true});
-  put("al-type",r=>TY[r.ins.type]);put("al-ccy",r=>CC[r.ins.ccy]);put("al-sector",r=>r.ins.sector);put("al-region",r=>r.ins.region);
+  put("al-type",r=>TY[r.ins.type]);put("al-ccy",r=>CC[r.ins.ccy]||r.ins.ccy);put("al-sector",r=>r.ins.sector);put("al-region",r=>r.ins.region);
  },
  risk(A){
   const tl=$("rk-tiles");tl.textContent="";
@@ -821,7 +895,7 @@ const VIEWS={
    tile("c3","Worst fall","mdd",pct(A.mdd),"Peak to low, "+per),
    tile("c3","Daily value at risk","var",money(A.var95*A.total),pct(A.var95)+" of the value, 1 day in 20"));
   $("rk-rc-sub").textContent="Each row compares a share of the money with its share of the ups and downs, "+per+".";
-  const gf={holding:null,sector:r=>r.ins.sector,person:r=>r.p.person,account:r=>r.p.account,ccy:r=>r.ins.ccy==="USD"?"US dollars":"Pounds"}[state.group];
+  const gf={holding:null,sector:r=>r.ins.sector,person:r=>r.p.person,account:r=>r.p.account,ccy:r=>r.ins.ccy==="USD"?"US dollars":r.ins.ccy==="GBP"?"Pounds":r.ins.ccy}[state.group];
   const items=(gf?groupBy(A,gf).map(g=>({name:g.k,w:g.w,rc:g.rc})):A.tick.map(x=>({name:x.ins.n,w:x.w,rc:x.rc}))).sort((a,b)=>b.rc-a.rc).slice(0,10);
   pairBars($("rk-rc"),items);
   renderFlags($("rk-flags"),A);
@@ -835,12 +909,12 @@ const VIEWS={
  },
  activity(){
   const inScope=x=>(state.person==="all"||x.person===state.person)&&(state.account==="all"||x.account===state.account);
-  const rows=txns.filter(inScope).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.id-a.id);
-  const real=sum(state.realised.filter(inScope).map(p=>p.realised*(INS[p.t].ccy==="USD"?1/live.fx:1)));
+  const rows=txns.filter(inScope).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:ord(b)-ord(a));
+  const real=sum(state.realised.filter(inScope).map(p=>p.realised/fxNow(INS[p.t].ccy)));
   $("ac-sum").textContent=rows.length+" transaction"+(rows.length===1?"":"s")+(rows.length?" · first on "+fmtDate(dateOf(rows[rows.length-1].date),true):"")+" · gains already taken from sales: "+money(real,{sign:true});
   const el=$("ac-table");el.textContent="";
   if(!rows.length){el.append(H("div",{class:"empty",text:"No transactions yet. Import an activity sheet or add a transaction."}));return}
-  const cur=x=>INS[x.t].ccy==="USD"?"$":"£",num=v=>v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const cur=x=>ccySym(INS[x.t].ccy),num=v=>v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
   el.append(H("table",null,
     H("thead",null,H("tr",null,["Date","Type","Holding","Owner","Account"].map(h=>H("th",{text:h})),["Quantity","Price","Total"].map(h=>H("th",{class:"r",text:h})),H("th"))),
     H("tbody",null,rows.slice(0,300).map(x=>H("tr",null,
@@ -862,8 +936,8 @@ document.querySelectorAll(".info[data-i]").forEach(b=>{b.setAttribute("aria-labe
 let hoverLock=false;
 document.addEventListener("pointerover",e=>{hoverLock=!!(e.target.closest&&e.target.closest(".chart,.bars"))});
 function renderChrome(){
-  $("livetext").textContent=(live.paused?"Paused":"Simulated prices")+" · "+live.at.toLocaleTimeString("en-GB");
-  $("livedot").classList.toggle("paused",live.paused);$("pause").textContent=live.paused?"Resume prices":"Pause prices";
+  $("livetext").textContent=LIVE?(live.err?"Prices not updating · "+live.err:"Yahoo Finance prices · updated "+live.at.toLocaleTimeString("en-GB")):(live.paused?"Paused":"Simulated prices")+" · "+live.at.toLocaleTimeString("en-GB");
+  $("livedot").classList.toggle("paused",LIVE?!!live.err:live.paused);$("pause").textContent=LIVE?"Refresh now":live.paused?"Resume prices":"Pause prices";
   document.querySelectorAll(".tabs a").forEach(a=>a.dataset.v===state.view?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
   document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+state.view));
   $("filters").style.display=state.view==="guide"?"none":"";
@@ -881,7 +955,7 @@ function fillSelects(){
   if(state.account!=="all"&&!used.includes(state.account))state.account="all";
   fp.value=state.person;fa.value=state.account;
 }
-function render(){hideTip();renderChrome();VIEWS[state.view](analyse())}
+function render(){hideTip();renderChrome();if(!ready)return;VIEWS[state.view](analyse())}
 function route(){const h=location.hash.replace("#","");state.view=VIEWS[h]?h:"overview";closePop();render()}
 addEventListener("hashchange",route);
 $("f-person").addEventListener("change",e=>{state.person=e.target.value;render()});
@@ -891,14 +965,25 @@ $("f-ccy").addEventListener("click",e=>{const b=e.target.closest("button");if(b)
 $("rk-group").addEventListener("click",e=>{const b=e.target.closest("button");if(b){state.group=b.dataset.g;render()}});
 document.querySelectorAll("[data-table]").forEach(b=>b.addEventListener("click",()=>{state.tables[b.dataset.table]=!state.tables[b.dataset.table];render()}));
 $("h-search").addEventListener("input",e=>{state.q=e.target.value;render()});
-$("pause").addEventListener("click",()=>{live.paused=!live.paused;renderChrome()});
-setInterval(()=>{if(live.paused||document.hidden)return;tick();if(hoverLock||document.querySelector(".overlay.open")){renderChrome();return}render()},SETTINGS.tickSeconds*1000);
+$("pause").addEventListener("click",()=>{if(LIVE){refreshLive(true);return}live.paused=!live.paused;renderChrome()});
+setInterval(()=>{if(LIVE||live.paused||document.hidden)return;tick();if(hoverLock||document.querySelector(".overlay.open")){renderChrome();return}render()},SETTINGS.tickSeconds*1000);
 let rz=null;new ResizeObserver(()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!hoverLock)render()},150)}).observe(document.querySelector("main"));
 
 /* ============ add / remove transactions ============ */
-function changed(){save();fillSelects();render()}
-function removePos(id){const p=positions.find(p=>p.id===id);if(!p)return;const before=txns;txns=txns.filter(x=>x.t+"|"+x.person+"|"+x.account!==id);changed();toast("Removed "+INS[p.t].n+" ("+p.person+", "+p.account+") and its transactions.",()=>{txns=before;changed()})}
-function removeTxn(id){const before=txns;txns=txns.filter(x=>x.id!==id);changed();toast("Removed one transaction.",()=>{txns=before;changed()})}
+function changed(){if(LIVE)derive();else save();fillSelects();render()}
+const msgOf=e=>(e&&e.message)||String(e||"Something went wrong");
+// Every change to the activity sheet goes through these two functions.
+// Demo: rows live in this browser. Live: rows are saved to the shared database first.
+async function addTxns(rows){ // rows: {date,t,side,qty,price,person,account}
+  if(LIVE){const saved=await dbInsert(rows);txns=txns.concat(saved);await ensureMarket(saved.map(x=>x.t))}
+  else rows.forEach(x=>{ensureInstrument(x.t,x.price,x.ccy);txns.push({id:nextId++,date:x.date,t:x.t,side:x.side,qty:x.qty,price:x.price,person:x.person,account:x.account})});
+  rows.forEach(x=>{if(!people.includes(x.person))people.push(x.person);if(!ACCOUNTS.includes(x.account))ACCOUNTS.push(x.account)});
+}
+async function delTxns(ids){const set=new Set(ids),gone=txns.filter(x=>set.has(x.id));if(LIVE&&ids.length)await dbDelete(ids);txns=txns.filter(x=>!set.has(x.id));return gone}
+function restore(rows){addTxns(rows).then(changed).catch(e=>toast(msgOf(e)))}
+async function removePos(id){const p=positions.find(p=>p.id===id);if(!p)return;
+  try{const gone=await delTxns(txns.filter(x=>x.t+"|"+x.person+"|"+x.account===id).map(x=>x.id));changed();toast("Removed "+INS[p.t].n+" ("+p.person+", "+p.account+") and its transactions.",()=>restore(gone))}catch(e){toast(msgOf(e))}}
+async function removeTxn(id){try{const gone=await delTxns([id]);changed();toast("Removed one transaction.",()=>restore(gone))}catch(e){toast(msgOf(e))}}
 function openForm(){
   const dl=$("a-tickers");dl.textContent="";Object.values(INS).forEach(i=>dl.append(H("option",{value:i.t,text:i.n})));
   const ps=$("a-person");ps.textContent="";ps.append(...people.map(p=>H("option",{value:p,text:p})),H("option",{value:"__new",text:"Add someone new…"}));
@@ -910,13 +995,13 @@ function openForm(){
 }
 function closeForm(){$("ovl").classList.remove("open")}
 function resolveTicker(){const t=$("a-ticker").value.trim().toUpperCase(),ins=INS[t],el=$("a-resolved");
-  if(ins){el.textContent=ins.n+" · "+ins.type+" · priced in "+ins.ccy+" · now "+nativePx(live.px[t],ins.ccy);$("a-costlabel").textContent="Price per share, in "+(ins.ccy==="USD"?"dollars ($)":"pounds (£)")}
-  else{el.textContent=t?"Not one of the sample tickers, so the demo will invent a price starting from the one you enter. The live site will look it up on Yahoo Finance.":"";$("a-costlabel").textContent="Price per share"}return t}
+  if(ins){el.textContent=ins.n+" · "+ins.type+" · priced in "+ins.ccy+" · now "+nativePx(live.px[t],ins.ccy);$("a-costlabel").textContent="Price per share, in "+(ins.ccy==="USD"?"dollars ($)":ins.ccy==="GBP"?"pounds (£)":ins.ccy)}
+  else{el.textContent=!t?"":LIVE?"Not held yet. It will be checked with Yahoo Finance when you add it.":"Not one of the sample tickers, so the demo will invent a price starting from the one you enter. The live site will look it up on Yahoo Finance.";$("a-costlabel").textContent="Price per share"}return t}
 $("add").addEventListener("click",openForm);$("a-cancel").addEventListener("click",closeForm);
 $("ovl").addEventListener("pointerdown",e=>{if(e.target===$("ovl"))closeForm()});
 $("a-ticker").addEventListener("input",resolveTicker);
 $("a-person").addEventListener("change",e=>{$("a-newwrap").hidden=e.target.value!=="__new";if(e.target.value==="__new")$("a-newperson").focus()});
-$("addform").addEventListener("submit",e=>{e.preventDefault();const err=$("a-err"),t=resolveTicker();
+$("addform").addEventListener("submit",async e=>{e.preventDefault();const err=$("a-err"),t=resolveTicker();
   let person=$("a-person").value;const qty=parseFloat($("a-qty").value),price=parseFloat($("a-cost").value),side=$("a-side").value,date=$("a-date").value,account=$("a-account").value;
   if(!/^[A-Z0-9.\-^=]{1,15}$/.test(t)){err.textContent="Enter a ticker, such as AAPL or SHEL.L.";$("a-ticker").focus();return}
   if(!date||date>iso(new Date())){err.textContent="Choose a date that is not in the future.";$("a-date").focus();return}
@@ -924,10 +1009,13 @@ $("addform").addEventListener("submit",e=>{e.preventDefault();const err=$("a-err
   if(!(qty>0)){err.textContent="Quantity must be more than zero.";$("a-qty").focus();return}
   if(!(price>0)){err.textContent="Enter the price per share or unit.";$("a-cost").focus();return}
   if(side==="sell"){const held=(positions.find(p=>p.id===t+"|"+person+"|"+account)||{qty:0}).qty;if(qty>held+1e-9){err.textContent=person+" holds "+held.toLocaleString("en-GB")+" of "+t+" in that account, so "+qty.toLocaleString("en-GB")+" cannot be sold.";return}}
-  const ins=ensureInstrument(t,price);
-  if(!people.includes(person))people.push(person);
-  txns.push({id:nextId++,date,t,side,qty,price,person,account});closeForm();changed();
-  toast((side==="sell"?"Sold ":"Bought ")+qty.toLocaleString("en-GB")+" × "+ins.n+" in "+person+"'s "+account+".")});
+  const btn=$("addform").querySelector("button[type=submit]");btn.disabled=true;
+  try{
+    if(LIVE&&!INS[t]){err.textContent="Checking the ticker with Yahoo Finance…";
+      if((await unknownSymbols([t])).length){err.textContent="Yahoo Finance doesn't recognise "+t+". Look the share up on finance.yahoo.com and copy its symbol. London shares end in .L";return}}
+    await addTxns([{date,t,side,qty,price,person,account}]);closeForm();changed();
+    toast((side==="sell"?"Sold ":"Bought ")+qty.toLocaleString("en-GB")+" × "+INS[t].n+" in "+person+"'s "+account+".");
+  }catch(ex){err.textContent=msgOf(ex)}finally{btn.disabled=false}});
 
 /* ============ import an activity sheet ============ */
 // Headings the importer recognises for each column. Add your own spelling here if your sheet uses a different one.
@@ -1007,7 +1095,7 @@ function openImport(){const as=$("i-account");as.textContent="";$("i-person").va
   $("i-file").value="";$("i-paste").value="";pending=null;lastRows=null;showPreview();$("ovl2").classList.add("open");$("i-file").focus()}
 function closeImport(){$("ovl2").classList.remove("open")}
 function reparse(){pending=lastRows?readActivity(lastRows,$("i-person").value.trim()||"Me",$("i-account").value):null;showPreview()}
-function showPreview(msg){const el=$("i-preview"),go=$("i-go");el.textContent="";go.disabled=true;go.textContent="Import";
+function showPreview(msg){const el=$("i-preview"),go=$("i-go");el.textContent="";go.disabled=true;go.textContent="Import";delete go.dataset.sure;
   if(msg){el.append(H("div",{class:"err",text:msg}));return}
   if(!pending)return;
   if(pending.error){el.append(H("div",{class:"err",text:pending.error}));return}
@@ -1015,7 +1103,7 @@ function showPreview(msg){const el=$("i-preview"),go=$("i-go");el.textContent=""
   el.append(H("div",null,H("strong",{text:n+" row"+(n===1?"":"s")+" ready"}),s?" · "+s+" skipped":""));
   const ul=H("ul");pending.skipped.slice(0,4).forEach(t=>ul.append(H("li",{text:t})));if(s>4)ul.append(H("li",{text:"and "+(s-4)+" more"}));
   pending.notes.forEach(t=>ul.append(H("li",{text:t})));
-  if(pending.newSyms.size){const a=[...pending.newSyms];ul.append(H("li",{text:a.length+(a.length===1?" symbol is not":" symbols are not")+" among the demo's sample tickers, so the demo will invent prices starting from your purchase price: "+a.slice(0,8).join(", ")+(a.length>8?" and more":"")}))}
+  if(pending.newSyms.size){const a=[...pending.newSyms];ul.append(H("li",{text:LIVE?a.length+(a.length===1?" new symbol":" new symbols")+" will be checked with Yahoo Finance when you import: "+a.slice(0,8).join(", ")+(a.length>8?" and more":""):a.length+(a.length===1?" symbol is not":" symbols are not")+" among the demo's sample tickers, so the demo will invent prices starting from your purchase price: "+a.slice(0,8).join(", ")+(a.length>8?" and more":"")}))}
   if(ul.children.length)el.append(ul);
   if(n){go.disabled=false;go.textContent="Import "+n+" row"+(n===1?"":"s")}}
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.append(s)})}
@@ -1034,20 +1122,165 @@ $("i-person").addEventListener("input",reparse);$("i-account").addEventListener(
 $("import").addEventListener("click",openImport);$("i-cancel").addEventListener("click",closeImport);
 $("ovl2").addEventListener("pointerdown",e=>{if(e.target===$("ovl2"))closeImport()});
 $("i-template").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(TEMPLATE);toast("Template copied. Paste it into a blank spreadsheet.")}catch(e){$("i-paste").value=TEMPLATE;lastRows=parseDelimited(TEMPLATE);reparse();toast("Copying is blocked here, so the template is in the box instead.")}});
-$("i-go").addEventListener("click",()=>{if(!pending||!pending.ok.length)return;
-  const before={txns,people:[...people]},replace=document.querySelector('input[name="i-mode"]:checked').value==="replace";
-  [...pending.ok].sort((a,b)=>a.date<b.date?1:-1).forEach(x=>ensureInstrument(x.t,x.price,x.ccy));   // newest price first, so a new symbol starts from the latest purchase
-  const add=pending.ok.map(x=>({id:nextId++,date:x.date,t:x.t,side:x.side,qty:x.qty,price:x.price,person:x.person,account:x.account}));
-  txns=replace?add:txns.concat(add);if(replace)people=[];
-  add.forEach(x=>{if(!people.includes(x.person))people.push(x.person);if(!ACCOUNTS.includes(x.account))ACCOUNTS.push(x.account)});
-  state.person="all";state.account="all";closeImport();changed();
-  toast("Imported "+add.length+" row"+(add.length===1?"":"s")+".",()=>{txns=before.txns;people=before.people;changed()})});
+$("i-go").addEventListener("click",async()=>{if(!pending||!pending.ok.length)return;const go=$("i-go");
+  const replace=document.querySelector('input[name="i-mode"]:checked').value==="replace";
+  if(LIVE&&replace&&txns.length&&go.dataset.sure!=="1"){go.dataset.sure="1";go.textContent="Yes, delete the "+txns.length+" existing rows for everyone and import";return}   // shared data: ask twice
+  go.disabled=true;
+  try{
+    let rows=pending.ok,note="";
+    if(LIVE){const bad=new Set(await unknownSymbols([...new Set(rows.map(x=>x.t))]));
+      if(bad.size){rows=rows.filter(x=>!bad.has(x.t));note=" Left out "+[...bad].slice(0,6).join(", ")+(bad.size>6?" and more":"")+": Yahoo Finance doesn't recognise "+(bad.size===1?"it.":"them.")}
+      if(!rows.length){showPreview("Yahoo Finance doesn't recognise any of the symbols in this sheet. London shares need .L on the end, for example SHEL.L");return}}
+    else[...rows].sort((a,b)=>a.date<b.date?1:-1).forEach(x=>ensureInstrument(x.t,x.price,x.ccy));   // newest price first, so a new symbol starts from the latest purchase
+    const before={txns:txns.slice(),people:[...people]};
+    if(replace){await delTxns(txns.map(x=>x.id));people=[]}
+    await addTxns(rows);
+    state.person="all";state.account="all";closeImport();changed();
+    toast("Imported "+rows.length+" row"+(rows.length===1?"":"s")+"."+note,LIVE?null:()=>{txns=before.txns;people=before.people;changed()});
+  }catch(e){showPreview(msgOf(e))}finally{go.disabled=false}});
 function toCSV(){const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
   return"Date,Symbol,Type,Quantity,Price,Owner,Account,Currency\n"+[...txns].sort((a,b)=>a.date<b.date?-1:1).map(x=>[x.date,x.t,x.side==="sell"?"Sell":"Buy",x.qty,x.price,q(x.person),q(x.account),INS[x.t].ccy].join(",")).join("\n")+"\n"}
 $("ac-copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(toCSV());toast("Copied "+txns.length+" rows. Paste them into a spreadsheet.")}catch(e){toast("Copying is blocked in this view.")}});
 $("ac-reset").addEventListener("click",()=>{const before={txns,people:[...people]};seed();state.person="all";state.account="all";changed();toast("Back to the sample data.",()=>{txns=before.txns;people=before.people;changed()})});
 
-fillSelects();route();
+/* ============ LIVE MODE: sign-in, the shared database and Yahoo Finance prices ============ */
+// Nothing below runs in the demo. It starts when SETTINGS.supabaseUrl and SETTINGS.supabaseKey are filled in.
+const SUPABASE_JS="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js";
+let sb=null;            // the connection to Supabase
+const market={};        // what the price service returned, by symbol
+let overrides={};       // corrections saved with the Edit button, by symbol
+const fxSym=c=>"GBP"+c+"=X";   // Yahoo's symbol for "how many of currency c one pound buys"
+// Where a share is listed, by Yahoo's exchange code
+const EXCH_REGION={LSE:"United Kingdom",IOB:"United Kingdom",NMS:"United States",NYQ:"United States",NGM:"United States",NCM:"United States",ASE:"United States",PCX:"United States",BTS:"United States",PNK:"United States",TOR:"Canada",PAR:"Europe",AMS:"Europe",GER:"Europe",FRA:"Europe",MIL:"Europe",MCE:"Europe",EBS:"Europe",BRU:"Europe",LIS:"Europe",DUB:"Europe",STO:"Europe",CPH:"Europe",HEL:"Europe",OSL:"Europe",VIE:"Europe",JPX:"Asia Pacific",HKG:"Asia Pacific",ASX:"Asia Pacific",SES:"Asia Pacific",KSC:"Asia Pacific",NSI:"Asia Pacific",BSE:"Asia Pacific",SHH:"Asia Pacific",SHZ:"Asia Pacific"};
+
+// ---- the database ----
+const rowToTxn=(r,i)=>({id:r.id,seq:Date.parse(r.created_at)||i+1,date:r.trade_date,t:r.symbol,side:r.side,qty:+r.quantity,price:+r.price,person:r.owner,account:r.account});
+async function dbInsert(rows){const out=[];
+  for(let i=0;i<rows.length;i+=400){const {data,error}=await sb.from("transactions").insert(rows.slice(i,i+400).map(x=>({trade_date:x.date,symbol:x.t,side:x.side,quantity:x.qty,price:x.price,owner:x.person,account:x.account}))).select();if(error)throw new Error("Couldn't save. "+error.message);out.push(...data.map(rowToTxn))}
+  return out}
+async function dbDelete(ids){for(let i=0;i<ids.length;i+=100){const {error}=await sb.from("transactions").delete().in("id",ids.slice(i,i+100));if(error)throw new Error("Couldn't delete. "+error.message)}}
+async function loadTxns(){const all=[];
+  for(let from=0;;from+=1000){const {data,error}=await sb.from("transactions").select("*").order("trade_date").order("created_at").range(from,from+999);if(error)throw new Error("Couldn't read the activity sheet. "+error.message);all.push(...data);if(data.length<1000)break}
+  txns=all.map(rowToTxn);people=[];txns.forEach(x=>{if(!people.includes(x.person))people.push(x.person);if(!ACCOUNTS.includes(x.account))ACCOUNTS.push(x.account)})}
+async function loadOverrides(){const {data,error}=await sb.from("instruments").select("*");if(!error)overrides=Object.fromEntries(data.map(r=>[r.symbol,r]))}
+
+// ---- prices ----
+async function fetchPrices(symbols,mode){ // mode "full" = a year of daily prices; "quote" = just the latest
+  const {data,error}=await sb.functions.invoke("prices",{body:{symbols,mode}});
+  if(error||!data||!data.data)throw new Error("Couldn't reach the price service."+(error&&error.message?" "+error.message:""));
+  return data.data}
+function normItem(it){ // Yahoo quotes London shares in pence ("GBp"): convert to pounds, and turn timestamps into dates
+  let ccy=it.currency||"GBP",k=1;if(ccy==="GBX"||/^[A-Z]{2}[a-z]$/.test(ccy)){ccy=ccy==="GBX"?"GBP":ccy.toUpperCase();k=.01}
+  const day=ts=>new Date((ts+(it.gmtoffset||0))*1000).toISOString().slice(0,10);
+  return{name:it.name,type:it.type,exchange:it.exchange,exchangeName:it.exchangeName,sector:it.sector,ccy,price:it.price*k,div:(it.div||0)*k,
+    bars:it.t.map((ts,i)=>[day(ts),it.c[i]*k]),mday:day(it.time||it.t[it.t.length-1]||0),stale:!!it.stale}}
+async function loadMarket(symbols,mode){ // fetch and merge into `market`
+  symbols=[...new Set(symbols)];if(!symbols.length)return;
+  const data=await fetchPrices(symbols,mode);
+  symbols.forEach(s=>{const raw=data[s];
+    if(!raw||raw.error){if(!market[s]||market[s].error)market[s]={error:(raw&&raw.error)||"no data"};return}
+    const it=normItem(raw);
+    if(mode==="full"||!market[s]||market[s].error){if(market[s]&&market[s].full)it.full=true;market[s]=it}
+    else{const m=market[s];m.price=it.price;m.mday=it.mday;it.bars.forEach(b=>{const i=m.bars.findIndex(x=>x[0]===b[0]);if(i>=0)m.bars[i]=b;else if(!m.bars.length||b[0]>m.bars[m.bars.length-1][0])m.bars.push(b)})}})}
+function wanted(){const s=new Set(txns.map(x=>x.t));s.add(SETTINGS.benchmark.symbol);s.add(fxSym("USD"));return[...s]}
+async function ensureMarket(symbols){ // make sure there is a year of history for these symbols and exchange rates for their currencies
+  const need=[...new Set(symbols)].filter(s=>!(market[s]&&market[s].full));
+  if(need.length){await loadMarket(need,"full");need.forEach(s=>market[s].full=true)}
+  const fx=[...new Set(Object.values(market).filter(m=>!m.error&&m.ccy&&m.ccy!=="GBP").map(m=>fxSym(m.ccy)))].filter(s=>!(market[s]&&market[s].full));
+  if(fx.length){await loadMarket(fx,"full");fx.forEach(s=>market[s].full=true)}
+  rebuild()}
+async function unknownSymbols(list){ // which of these does Yahoo Finance not recognise?
+  const ask=[...new Set(list)].filter(s=>!(market[s]&&!market[s].error));if(!ask.length)return[];
+  const data=await fetchPrices(ask,"quote");return ask.filter(s=>!data[s]||data[s].error)}
+function prevClose(it){const b=it.bars;if(!b.length)return it.price;const last=b[b.length-1];return last[0]>=it.mday&&b.length>1?b[b.length-2][1]:last[1]}
+function describe(sym,it){ // turn Yahoo's description into the dashboard's type, sector and region, then apply saved corrections
+  const name=it.name||sym,T=(it.type||"").toUpperCase(),o=overrides[sym]||{};
+  const type=T==="ETF"?"ETF":T==="MUTUALFUND"?"Fund":/investment trust|trust plc|investment company/i.test(name)?"Investment trust":"Share";
+  const pooled=type!=="Share";
+  const sector=pooled?(/bond|gilt|treasury|fixed income|corporate debt/i.test(name)?"Bonds (funds)":"Mixed (funds)"):(it.sector||"Not classified");
+  const region=!pooled?(EXCH_REGION[it.exchange]||it.exchangeName||"Other")
+    :/all.world|global|world|acwi|international|lifestrategy/i.test(name)?"Global":/s&p|nasdaq|\bus\b|u\.s\.|america/i.test(name)?"United States"
+    :/ftse 100|ftse 250|all.share|\buk\b|united kingdom|gilt/i.test(name)?"United Kingdom":/emerging/i.test(name)?"Emerging markets"
+    :/europe|euro stoxx/i.test(name)?"Europe":/asia|japan|pacific|china|india/i.test(name)?"Asia Pacific":"Not classified";
+  return{t:sym,n:o.name||name,type:o.type||type,sector:o.sector||sector,region:o.region||region,ccy:it.ccy,y:it.price?it.div/it.price*100:0}}
+function rebuild(){ // lay every price history on one shared calendar and work out daily returns in pounds
+  const syms=[...new Set(txns.map(x=>x.t))],bm=SETTINGS.benchmark.symbol,good=s=>market[s]&&!market[s].error?market[s]:null;
+  const days=new Set();[...syms,bm].forEach(s=>{const it=good(s);if(it)it.bars.forEach(b=>days.add(b[0]))});
+  let grid=[...days].sort().slice(-262);if(grid.length<2)grid=[daysAgo(1),iso(new Date())];
+  N=grid.length;DATES=grid.map(dateOf);
+  // a market that was shut on a given day keeps its previous price for that day
+  const lay=(bars,fill)=>{let j=0,last=null;return grid.map(d=>{while(j<bars.length&&bars[j][0]<=d){last=bars[j][1];j++}return last==null?(bars.length?bars[0][1]:fill):last})};
+  const ccys=new Set(["USD"]);syms.forEach(s=>{const it=good(s);if(it)ccys.add(it.ccy)});const b=good(bm);if(b)ccys.add(b.ccy);ccys.delete("GBP");
+  const FX={GBP:grid.map(()=>1)};live.fxm={GBP:1};live.fxmPrev={GBP:1};
+  ccys.forEach(c=>{const it=good(fxSym(c));if(it){FX[c]=lay(it.bars,it.price);live.fxm[c]=it.price;live.fxmPrev[c]=prevClose(it)}else{FX[c]=grid.map(()=>1);live.fxm[c]=1;live.fxmPrev[c]=1}});
+  live.fx=live.fxm.USD;live.fxPrev=live.fxmPrev.USD;FXC=FX.USD;
+  [INS,CLOSE,R,live.px,live.prev].forEach(o=>{for(const k in o)delete o[k]});
+  const ret=(cl,fx)=>cl.map((v,i)=>i===0?0:(v/fx[i])/(cl[i-1]/fx[i-1])-1);
+  syms.forEach(s=>{const it=good(s);
+    if(it){INS[s]=describe(s,it);CLOSE[s]=lay(it.bars,it.price);R[s]=ret(CLOSE[s],FX[it.ccy]||FX.GBP);live.px[s]=it.price;live.prev[s]=prevClose(it)}
+    else{ // Yahoo has nothing for this symbol: hold it at the last price paid so it still shows up
+      const last=txns.filter(x=>x.t===s).sort((a,b)=>a.date<b.date?1:-1)[0],o=overrides[s]||{};
+      INS[s]={t:s,n:o.name||s,type:o.type||"Share",sector:o.sector||"Not classified",region:o.region||"Not classified",ccy:/\.L$/.test(s)?"GBP":"USD",y:0,noPrice:true};
+      CLOSE[s]=grid.map(()=>last.price);R[s]=grid.map(()=>0);live.px[s]=last.price;live.prev[s]=last.price}});
+  BENCH=b?ret(lay(b.bars,b.price),FX[b.ccy]||FX.GBP):grid.map(()=>0);
+}
+let refreshing=false;
+async function refreshLive(manual){ // runs every SETTINGS.refreshSeconds, and when Refresh now is pressed
+  if(!ready||refreshing)return;refreshing=true;
+  try{const before={...live.px};
+    await loadTxns();await loadOverrides();
+    if(manual)Object.values(market).forEach(m=>{if(m.error)m.full=false});   // give failed symbols another go
+    await ensureMarket(wanted());
+    await loadMarket([...wanted(),...Object.keys(live.fxm).filter(c=>c!=="GBP").map(fxSym)],"quote");
+    rebuild();derive();live.moved={};for(const s in live.px)if(before[s]&&live.px[s]!==before[s])live.moved[s]=live.px[s]>before[s]?1:-1;
+    live.at=new Date();live.err=null;
+    if(!hoverLock&&!document.querySelector(".overlay.open")){fillSelects();render()}else renderChrome();
+  }catch(e){live.err=msgOf(e);renderChrome()}finally{refreshing=false}}
+
+// ---- sign-in ----
+function gate(title,msg,form){document.body.classList.add("gated");$("g-title").textContent=title;$("g-msg").textContent=msg||"";$("signin").hidden=!form}
+let polling=false;
+async function enter(session){
+  $("who").textContent=session.user.email||"Signed in";gate("Loading your portfolio","Fetching the activity sheet and prices from Yahoo Finance…");
+  try{await loadTxns();await loadOverrides();await ensureMarket(wanted());derive();
+    ready=true;live.at=new Date();document.body.classList.remove("gated");fillSelects();route();
+    if(!polling){polling=true;setInterval(()=>{if(!document.hidden)refreshLive()},Math.max(20,SETTINGS.refreshSeconds)*1000)}
+  }catch(e){gate("Couldn't load the portfolio",msgOf(e)+" Reload the page to try again.")}}
+async function startLive(){
+  document.body.classList.add("live");$("bench-name").textContent=SETTINGS.benchmark.name;gate("Family portfolio","Loading…");
+  try{await loadScript(SUPABASE_JS)}catch(e){gate("Couldn't start","The sign-in library didn't load. Check your connection and reload the page.");return}
+  sb=supabase.createClient(SETTINGS.supabaseUrl,SETTINGS.supabaseKey);
+  const {data}=await sb.auth.getSession();
+  if(data&&data.session)enter(data.session);else gate("Sign in","Use the email and password you were given.",true)}
+$("signin").addEventListener("submit",async e=>{e.preventDefault();const err=$("g-err"),btn=$("g-go");err.textContent="";btn.disabled=true;
+  try{const {data,error}=await sb.auth.signInWithPassword({email:$("g-email").value.trim(),password:$("g-pass").value});
+    if(error){err.textContent=/invalid/i.test(error.message)?"That email and password don't match an account.":error.message;return}
+    $("g-pass").value="";enter(data.session)}catch(ex){err.textContent=msgOf(ex)}finally{btn.disabled=false}});
+$("signout").addEventListener("click",async()=>{try{await sb.auth.signOut()}catch(e){}location.reload()});
+$("pwbtn").addEventListener("click",()=>{$("p-new").value="";$("p-err").textContent="";$("ovl3").classList.add("open");$("p-new").focus()});
+$("p-cancel").addEventListener("click",()=>$("ovl3").classList.remove("open"));
+$("pwform").addEventListener("submit",async e=>{e.preventDefault();const v=$("p-new").value,err=$("p-err");
+  if(v.length<8){err.textContent="Use at least 8 characters.";return}
+  const {error}=await sb.auth.updateUser({password:v});if(error){err.textContent=error.message;return}
+  $("ovl3").classList.remove("open");toast("Password changed.")});
+
+// ---- correcting how a holding is described ----
+let editing=null;
+function openEdit(sym){const ins=INS[sym];if(!ins)return;editing=sym;
+  $("e-sym").textContent=sym+" · these details feed the Allocation and Risk tabs for everyone.";
+  $("e-name").value=ins.n;$("e-type").value=ins.type;$("e-sector").value=ins.sector;$("e-region").value=ins.region;$("e-err").textContent="";
+  const fill=(id,vals)=>{const dl=$(id);dl.textContent="";[...new Set(vals)].sort().forEach(v=>dl.append(H("option",{value:v})))};
+  fill("e-sectors",[...Object.values(INS).map(i=>i.sector),"Technology","Financials","Healthcare","Energy","Industrials","Consumer","Consumer staples","Communication","Utilities","Materials","Real estate","Mixed (funds)","Bonds (funds)"]);
+  fill("e-regions",[...Object.values(INS).map(i=>i.region),"United Kingdom","United States","Europe","Asia Pacific","Emerging markets","Global"]);
+  $("ovl4").classList.add("open");$("e-name").focus()}
+$("e-cancel").addEventListener("click",()=>$("ovl4").classList.remove("open"));
+$("edform").addEventListener("submit",async e=>{e.preventDefault();if(!editing)return;
+  const row={symbol:editing,name:$("e-name").value.trim()||null,type:$("e-type").value,sector:$("e-sector").value.trim()||null,region:$("e-region").value.trim()||null,updated_at:new Date().toISOString()};
+  const {data,error}=await sb.from("instruments").upsert(row).select().single();if(error){$("e-err").textContent="Couldn't save. "+error.message;return}
+  overrides[editing]=data;rebuild();derive();$("ovl4").classList.remove("open");render();toast("Saved.")});
+[$("ovl3"),$("ovl4")].forEach(o=>o.addEventListener("pointerdown",e=>{if(e.target===o)o.classList.remove("open")}));
+
+if(LIVE)startLive();else{fillSelects();route()}
 </script>
 </body>
 </html>
