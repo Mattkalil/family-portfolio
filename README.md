@@ -2,7 +2,20 @@
 
 The whole site is one file: `index.html`. It holds the page (HTML), the styling (CSS) and the logic (JavaScript). There is nothing to install and nothing to build. Double-click `index.html` and it opens in your browser.
 
-This version is the demo: prices are simulated and data is kept in the browser. The live version keeps the same file and swaps the simulated prices for Yahoo Finance.
+The site runs in one of two modes:
+
+- **Demo** (the default): a made-up family, simulated prices, and anything you add stays in your own browser.
+- **Live**: real prices from Yahoo Finance, a shared activity sheet, and a sign-in for each family member. It switches on when the two Supabase details in `SETTINGS` are filled in. **`SETUP.md` is the step-by-step checklist.**
+
+## Files
+
+| File | What it is |
+|------|------------|
+| `index.html` | The whole website |
+| `SETUP.md` | How to switch on live mode |
+| `activity-template.csv` | A starting point for the activity sheet |
+| `supabase/schema.sql` | Creates the database tables (pasted into Supabase once) |
+| `supabase/functions/prices/index.ts` | The price service that fetches from Yahoo Finance (pasted into Supabase once) |
 
 ## Day to day: no code needed
 
@@ -45,7 +58,7 @@ Search the file (Ctrl+F or Cmd+F) for these headings.
 
 | To change...                                   | Search for                        |
 |------------------------------------------------|-----------------------------------|
-| Account types, risk cut-offs, refresh speed    | `SETTINGS`                        |
+| Account types, risk cut-offs, refresh speed, the benchmark, the Supabase details | `SETTINGS` |
 | Colours and fonts (light and dark themes)      | `:root{` at the top of the file   |
 | The wording of every explanation (the *i* buttons and the Guide tab) | `const G={`   |
 | The plain-English risk checks                  | `function flags`                  |
@@ -55,6 +68,8 @@ Search the file (Ctrl+F or Cmd+F) for these headings.
 | What each tab shows                            | `const VIEWS={`                   |
 | Tab names, card titles and other page text     | the HTML between `<body>` and `<script>` |
 | The sample family and tickers (demo only)      | `const CAT=` and `const SAMPLE=`  |
+| Sign-in, the shared database and Yahoo prices (live only) | `LIVE MODE`            |
+| How Yahoo's descriptions become type, sector and region | `function describe`      |
 
 ### Examples
 
@@ -66,6 +81,8 @@ Search the file (Ctrl+F or Cmd+F) for these headings.
 
 **Change the main colour.** Near the top, `--accent` and `--s1` set the blue. They appear three times (light theme, and the dark theme twice); change all three.
 
+**Change the benchmark.** In `SETTINGS`, change `benchmark:{symbol:"VWRL.L",name:"..."}` to any Yahoo Finance symbol, for example `symbol:"^FTSE"` with `name:"FTSE 100"`.
+
 **Teach the importer a new heading.** If your broker's export calls the price column "Deal price", add `"deal price"` (lower case) to the `price:` list in `const COLS=`.
 
 ## Tips
@@ -74,3 +91,4 @@ Search the file (Ctrl+F or Cmd+F) for these headings.
 - The most common mistakes are a missing comma between items in a list and a missing closing quote.
 - Text inside quotes is safe to edit. Leave the punctuation around it alone.
 - If you get stuck, undo the change from the file's History on GitHub.
+- If you change `supabase/functions/prices/index.ts`, the change only takes effect once you paste the new version into the function in the Supabase dashboard and deploy it again.
