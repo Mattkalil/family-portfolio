@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Family Portfolio Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: header + tab bar, one filter row that scopes everything, then a 12-column card grid.
+   Summary first (total, today's change), detail below. Charts are thin marks on quiet surfaces. */
+:root{
+  color-scheme: light;
+  --page:#f3f3f0; --surface:#fcfcfb; --sunken:#f0efec;
+  --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,.10);
+  --accent:#2a78d6; --accent-strong:#1c5cab; --accent-wash:rgba(42,120,214,.10);
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300;
+  --seq-a:#86b6ef; --seq-b:#1c5cab; --deemph:#b5b4ad;
+  --div-neg:#2a78d6; --div-pos:#e34948; --div-mid:#f0efec;
+  --good:#0ca30c; --warn:#fab219; --serious:#ec835a; --crit:#d03b3b;
+  --up:#006300; --down:#b3261e;
+  --font: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --page:#0d0d0d; --surface:#1a1a19; --sunken:#242423;
+    --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+    --accent:#3987e5; --accent-strong:#86b6ef; --accent-wash:rgba(57,135,229,.14);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+    --seq-a:#184f95; --seq-b:#5598e7; --deemph:#5c5b57;
+    --div-neg:#3987e5; --div-pos:#e66767; --div-mid:#383835;
+    --up:#0ca30c; --down:#e66767;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --page:#0d0d0d; --surface:#1a1a19; --sunken:#242423;
+  --ink:#f0efec; --ink-2:#c3c2b7; --muted:#898781;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10);
+  --accent:#3987e5; --accent-strong:#86b6ef; --accent-wash:rgba(57,135,229,.14);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300;
+  --seq-a:#184f95; --seq-b:#5598e7; --deemph:#5c5b57;
+  --div-neg:#3987e5; --div-pos:#e66767; --div-mid:#383835;
+  --up:#0ca30c; --down:#e66767;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page);color:var(--ink);font:400 15px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1220px;margin:0 auto;padding:0 20px 56px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:22px 0 14px}
+.top h1{font-size:22px;font-weight:600;letter-spacing:-.01em}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:3px 9px;border-radius:999px;border:1px solid var(--border);color:var(--ink-2);background:var(--surface)}
+.top .spacer{flex:1}
+.livestat{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--good)}
+.dot.paused{background:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.dot:not(.paused){animation:pulse 2s ease-in-out infinite}}
+@keyframes pulse{50%{opacity:.35}}
+.btn{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:7px 12px;font-weight:500;font-size:14px;cursor:pointer}
+.btn:hover{background:var(--sunken)}
+.btn.primary{background:var(--accent);border-color:transparent;color:#fff}
+.btn.primary:hover{background:var(--accent-strong);color:#fff}
+:root[data-theme="dark"] .btn.primary:hover{color:#0b0b0b}
+.btn.small{padding:4px 9px;font-size:13px}
+.btn.ghost{background:transparent}
+.notice{display:flex;gap:10px;align-items:flex-start;background:var(--accent-wash);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:14px;color:var(--ink-2)}
+.notice strong{color:var(--ink);font-weight:600}
+
+/* tabs + filters */
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--grid);margin-top:16px}
+.tabs a{padding:10px 14px;text-decoration:none;color:var(--ink-2);font-weight:500;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--ink);border-bottom-color:var(--accent)}
+.filters{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:end;padding:14px 0}
+.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink-2);font-weight:500}
+.field select,.field input{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:14px;min-width:132px}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:transparent;padding:7px 11px;font-size:14px;cursor:pointer;color:var(--ink-2)}
+.seg button+button{border-left:1px solid var(--border)}
+.seg button[aria-pressed="true"]{background:var(--accent-wash);color:var(--ink);font-weight:600}
+
+/* cards */
+.grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:16px}
+.c3{grid-column:span 3}.c4{grid-column:span 4}.c5{grid-column:span 5}.c6{grid-column:span 6}.c7{grid-column:span 7}.c8{grid-column:span 8}.c12{grid-column:span 12}
+@media (max-width:980px){.c3{grid-column:span 6}.c4,.c5,.c6,.c7,.c8{grid-column:span 12}}
+@media (max-width:560px){.c3{grid-column:span 12}}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;min-width:0}
+.card-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:4px}
+.card-h h2{font-size:15px;font-weight:600}
+.card-h .spacer{flex:1}
+.sub{font-size:13px;color:var(--ink-2);margin:0 0 12px}
+.info{width:18px;height:18px;border-radius:50%;border:1px solid var(--axis);background:transparent;color:var(--ink-2);font-size:11px;font-weight:600;line-height:1;cursor:pointer;padding:0;flex:none;font-family:Georgia,serif;font-style:italic}
+.info:hover,.info[aria-expanded="true"]{background:var(--accent-wash);border-color:var(--accent);color:var(--ink)}
+
+/* hero + tiles */
+.hero .label,.tile .label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink-2);font-weight:500}
+.hero .value{font-size:52px;font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:6px 0 8px}
+@media (max-width:560px){.hero .value{font-size:40px}}
+.hero .meta{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:14px;color:var(--ink-2)}
+.tile .value{font-size:24px;font-weight:600;letter-spacing:-.01em;margin-top:6px}
+.tile .foot{font-size:13px;color:var(--ink-2);margin-top:2px}
+.delta{font-weight:600;white-space:nowrap}
+.delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;border:1px solid var(--border);border-radius:999px;padding:2px 9px 2px 7px;color:var(--ink);white-space:nowrap}
+.chip i{font-style:normal;display:inline-grid;place-items:center;width:14px;height:14px;border-radius:50%;font-size:9px;font-weight:700;color:#fff;background:var(--muted)}
+.chip.good i{background:var(--good)}.chip.warning i{background:var(--warn);color:#0b0b0b}.chip.serious i{background:var(--serious);color:#0b0b0b}
+
+/* charts */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart svg text{font:11px var(--font);fill:var(--muted);font-variant-numeric:tabular-nums}
+.chart svg text.lab{fill:var(--ink-2);font-size:12px}
+.chart svg text.lab b,.chart svg text.strong{fill:var(--ink);font-weight:600}
+.chart .gridl{stroke:var(--grid);stroke-width:1}
+.chart .axisl{stroke:var(--axis);stroke-width:1}
+.chart .cross{stroke:var(--axis);stroke-width:1}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--ink-2);margin-bottom:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.key-line{width:14px;height:2px;border-radius:1px;display:inline-block}
+.key-box{width:10px;height:10px;border-radius:3px;display:inline-block}
+.bars{display:grid;grid-template-columns:minmax(90px,auto) minmax(60px,1fr) auto;gap:9px 12px;align-items:center;font-size:14px}
+.bars .name{overflow-wrap:anywhere}
+.bars .track{height:14px;display:flex;flex-direction:column;justify-content:center;gap:2px;cursor:default}
+.bars .bar{height:12px;border-radius:0 4px 4px 0;background:var(--accent);min-width:2px}
+.bars .track:hover .bar,.bars .track:focus-visible .bar{filter:brightness(1.12)}
+.bars .bar.a{height:6px;background:var(--seq-a)}.bars .bar.b{height:6px;background:var(--seq-b)}
+.bars .track.pair{height:20px}
+.bars .fig{text-align:right;color:var(--ink-2);white-space:nowrap}
+.bars .fig b{color:var(--ink);font-weight:600}
+.segbar{display:flex;gap:2px;height:8px;min-width:90px}
+.segbar span{height:8px;min-width:2px}
+.segbar span:first-child{border-radius:4px 0 0 4px}.segbar span:last-child{border-radius:0 4px 4px 0}
+.segbar span:only-child{border-radius:4px}
+
+/* tables */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 10px;text-align:left;border-bottom:1px solid var(--grid);vertical-align:middle}
+th{font-size:12px;font-weight:600;color:var(--ink-2);white-space:nowrap}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th button:hover{color:var(--ink)}
+th button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+td.r,th.r{text-align:right}
+td.r{font-variant-numeric:tabular-nums;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tfoot td{font-weight:600;border-top:1px solid var(--axis)}
+.hname{font-weight:500}
+.hmeta{font-size:12px;color:var(--ink-2)}
+.tag{font-size:11px;border:1px solid var(--border);border-radius:4px;padding:0 5px;color:var(--ink-2);margin-left:6px;white-space:nowrap}
+@media (prefers-reduced-motion:no-preference){
+  .tick-up{animation:tu 1.2s ease-out}.tick-down{animation:td 1.2s ease-out}
+}
+@keyframes tu{from{background:rgba(12,163,12,.22)}to{background:transparent}}
+@keyframes td{from{background:rgba(208,59,59,.22)}to{background:transparent}}
+.x{border:0;background:transparent;color:var(--ink-2);cursor:pointer;border-radius:6px;padding:3px 7px;font-size:13px}
+.x:hover{background:var(--sunken);color:var(--ink)}
+
+/* flags */
+.flags{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.flags li{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;align-items:start}
+.flags .ico{grid-row:span 2;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;background:var(--muted);margin-top:1px}
+.flags .good .ico{background:var(--good)}.flags .warning .ico{background:var(--warn);color:#0b0b0b}.flags .serious .ico{background:var(--serious);color:#0b0b0b}
+.flags .t{font-weight:500}
+.flags .d{font-size:13px;color:var(--ink-2)}
+
+/* floating bits */
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:8px 10px;font-size:13px;max-width:280px;display:none}
+#tip .tt{color:var(--ink-2);margin-bottom:4px}
+#tip .row{display:flex;align-items:center;gap:8px;justify-content:space-between}
+#tip .row b{font-weight:600}
+#tip .row span{color:var(--ink-2);display:inline-flex;align-items:center;gap:6px}
+#pop{position:fixed;z-index:60;background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.18);padding:14px 16px;width:min(340px,calc(100vw - 32px));display:none;font-size:14px}
+#pop h3{font-size:15px;font-weight:600;margin-bottom:6px}
+#pop p{margin:0 0 8px;color:var(--ink-2)}
+#pop p:last-child{margin-bottom:0}
+#pop .thumb{border-top:1px solid var(--grid);padding-top:8px;color:var(--ink)}
+#toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:70;background:var(--ink);color:var(--surface);border-radius:10px;padding:10px 14px;font-size:14px;display:none;gap:14px;align-items:center}
+#toast button{all:unset;cursor:pointer;font-weight:600;text-decoration:underline}
+.overlay{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.42);display:none;align-items:flex-start;justify-content:center;padding:6vh 16px;overflow:auto}
+.overlay.open{display:flex}
+.dialog{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;width:min(520px,100%)}
+.dialog h2{font-size:18px;font-weight:600;margin-bottom:4px}
+.form{display:grid;grid-template-columns:1fr 1fr;gap:12px 14px;margin-top:14px}
+.form .full{grid-column:1/-1}
+.form .field input,.form .field select{min-width:0;width:100%}
+.resolved{font-size:13px;color:var(--ink-2);min-height:20px}
+.err{color:var(--down);font-size:13px;min-height:18px}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:6px}
+@media (max-width:480px){.form{grid-template-columns:1fr}}
+
+.field textarea{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:7px 10px;font:13px ui-monospace,Menlo,Consolas,monospace;width:100%;resize:vertical;color:var(--ink)}
+.radio{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:400;color:var(--ink);padding:2px 0}
+.form .field .radio input{width:auto;min-width:0;margin:0;flex:none}
+.preview{font-size:13px;color:var(--ink-2);min-height:20px}
+.preview ul{margin:4px 0 0;padding-left:18px}
+.preview strong{color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* guide */
+.gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.gloss .card h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.gloss .card p{margin:0 0 8px;color:var(--ink-2);font-size:14px}
+.gloss .card p.thumb{color:var(--ink);margin-bottom:0}
+.prose{max-width:68ch}
+.prose p,.prose li{color:var(--ink-2)}
+.prose ul{padding-left:18px;margin:8px 0}
+.view{display:none}.view.on{display:block}
+.empty{padding:28px;text-align:center;color:var(--ink-2)}
+footer{margin-top:28px;font-size:13px;color:var(--ink-2)}
+.scale{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-2);margin-top:10px;flex-wrap:wrap}
+.scale .ramp{width:160px;height:8px;border-radius:4px;background:linear-gradient(90deg,var(--div-neg),var(--div-mid),var(--div-pos))}
+.rowh{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Family portfolio</h1>
+    <span class="pill">Demo · sample data</span>
+    <span class="spacer"></span>
+    <span class="livestat"><span class="dot" id="livedot"></span><span id="livetext">Simulated prices</span></span>
+    <button class="btn small ghost" id="pause" type="button">Pause prices</button>
+    <button class="btn" id="import" type="button">Import activity sheet</button>
+    <button class="btn primary" id="add" type="button">Add a transaction</button>
+  </header>
+  <div class="notice"><span><strong>This is a demo.</strong> The family, the positions and every price here are made up, and prices move on a simulator. It shows the layout and the analysis. To try it with your own portfolio, press Import activity sheet. The live site will use real prices from Yahoo Finance.</span></div>
+
+  <nav class="tabs" aria-label="Sections">
+    <a href="#overview" data-v="overview">Overview</a>
+    <a href="#holdings" data-v="holdings">Holdings</a>
+    <a href="#activity" data-v="activity">Activity</a>
+    <a href="#allocation" data-v="allocation">Allocation</a>
+    <a href="#risk" data-v="risk">Risk</a>
+    <a href="#guide" data-v="guide">Guide</a>
+  </nav>
+
+  <div class="filters" id="filters">
+    <label class="field">Person<select id="f-person"></select></label>
+    <label class="field">Account<select id="f-account"></select></label>
+    <div class="field">Period<div class="seg" id="f-period" role="group" aria-label="Period">
+      <button type="button" data-p="21">1M</button><button type="button" data-p="63">3M</button><button type="button" data-p="126">6M</button><button type="button" data-p="252">1Y</button></div></div>
+    <div class="field">Show totals in<div class="seg" id="f-ccy" role="group" aria-label="Totals currency">
+      <button type="button" data-c="GBP">£ GBP</button><button type="button" data-c="USD">$ USD</button></div></div>
+  </div>
+
+  <main>
+    <!-- OVERVIEW -->
+    <section class="view" id="v-overview">
+      <div class="grid">
+        <div class="card hero c5" id="ov-hero"></div>
+        <div class="c7 grid" id="ov-tiles" style="gap:16px"></div>
+        <div class="card c8">
+          <div class="card-h"><h2>How today's mix has moved</h2><button class="info" data-i="perf" type="button">i</button><span class="spacer"></span><button class="btn small ghost" data-table="perf" type="button">Show as table</button></div>
+          <p class="sub" id="ov-perf-sub"></p>
+          <div class="legend"><span><i class="key-line" style="background:var(--s1)"></i>Your holdings</span><span><i class="key-line" style="background:var(--deemph)"></i>Global share index (simulated)</span></div>
+          <div class="chart" id="ov-perf"></div>
+        </div>
+        <div class="card c4">
+          <div class="card-h"><h2>Risk at a glance</h2><button class="info" data-i="flags" type="button">i</button></div>
+          <p class="sub">Plain-English checks on where the risk sits.</p>
+          <ul class="flags" id="ov-flags"></ul>
+        </div>
+        <div class="card c7">
+          <div class="card-h"><h2>Who holds what</h2><button class="info" data-i="accounts" type="button">i</button></div>
+          <p class="sub">Value by person and account type.</p>
+          <div class="legend" id="ov-who-legend"></div>
+          <div class="tablewrap" id="ov-who"></div>
+        </div>
+        <div class="card c5">
+          <div class="card-h"><h2>Biggest holdings</h2><button class="info" data-i="weight" type="button">i</button></div>
+          <p class="sub">Share of the total, same holding combined across accounts.</p>
+          <div class="bars" id="ov-top"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOLDINGS -->
+    <section class="view" id="v-holdings">
+      <div class="card">
+        <div class="rowh">
+          <label class="field">Search<input id="h-search" type="search" placeholder="Name or ticker" autocomplete="off"></label>
+          <span class="spacer" style="flex:1"></span>
+          <span class="sub" style="margin:0" id="h-count"></span>
+        </div>
+        <div class="tablewrap" id="h-table"></div>
+        <p class="sub" style="margin:12px 0 0">Prices are shown in each holding's own currency. Values and gains are converted into the totals currency you picked above. Funds price once a day, so they don't tick.</p>
+      </div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section class="view" id="v-activity">
+      <div class="card">
+        <div class="rowh">
+          <div><div class="card-h" style="margin:0"><h2>Activity sheet</h2><button class="info" data-i="activity" type="button">i</button></div><p class="sub" style="margin:2px 0 0" id="ac-sum"></p></div>
+          <span style="flex:1"></span>
+          <button class="btn small" type="button" id="ac-copy">Copy as CSV</button>
+          <button class="btn small" type="button" id="ac-reset">Reset to sample data</button>
+        </div>
+        <div class="tablewrap" id="ac-table"></div>
+        <p class="sub" style="margin:12px 0 0">Every figure on the other tabs is worked out from these rows. Add a row and everything updates.</p>
+      </div>
+    </section>
+
+    <!-- ALLOCATION -->
+    <section class="view" id="v-allocation">
+      <div class="grid">
+        <div class="card c6"><div class="card-h"><h2>By investment type</h2><button class="info" data-i="type" type="button">i</button></div><p class="sub">Single shares versus pooled investments.</p><div class="bars" id="al-type"></div></div>
+        <div class="card c6"><div class="card-h"><h2>By currency</h2><button class="info" data-i="currency" type="button">i</button></div><p class="sub">The currency each holding is priced in.</p><div class="bars" id="al-ccy"></div></div>
+        <div class="card c6"><div class="card-h"><h2>By sector</h2><button class="info" data-i="sector" type="button">i</button></div><p class="sub">Which industries the single shares sit in.</p><div class="bars" id="al-sector"></div></div>
+        <div class="card c6"><div class="card-h"><h2>By region</h2><button class="info" data-i="region" type="button">i</button></div><p class="sub">Where each holding is focused.</p><div class="bars" id="al-region"></div></div>
+      </div>
+    </section>
+
+    <!-- RISK -->
+    <section class="view" id="v-risk">
+      <div class="grid">
+        <div class="c12 grid" id="rk-tiles" style="gap:16px"></div>
+        <div class="card c7">
+          <div class="card-h"><h2>Where the risk sits</h2><button class="info" data-i="riskshare" type="button">i</button></div>
+          <p class="sub" id="rk-rc-sub"></p>
+          <div class="rowh"><div class="seg" id="rk-group" role="group" aria-label="Group risk by">
+            <button type="button" data-g="holding">Holding</button><button type="button" data-g="sector">Sector</button><button type="button" data-g="person">Person</button><button type="button" data-g="account">Account</button><button type="button" data-g="ccy">Currency</button></div></div>
+          <div class="legend"><span><i class="key-box" style="background:var(--seq-a)"></i>Share of value</span><span><i class="key-box" style="background:var(--seq-b)"></i>Share of risk</span></div>
+          <div class="bars" id="rk-rc"></div>
+        </div>
+        <div class="card c5">
+          <div class="card-h"><h2>Checks</h2><button class="info" data-i="flags" type="button">i</button></div>
+          <p class="sub">Based on common rules of thumb, not advice.</p>
+          <ul class="flags" id="rk-flags"></ul>
+        </div>
+        <div class="card c6">
+          <div class="card-h"><h2>Do the holdings move together?</h2><button class="info" data-i="corr" type="button">i</button><span class="spacer"></span><button class="btn small ghost" data-table="corr" type="button">Show as table</button></div>
+          <p class="sub" id="rk-corr-sub"></p>
+          <div class="chart" id="rk-corr"></div>
+          <div class="scale"><span>Move opposite (−1)</span><span class="ramp"></span><span>Move together (+1)</span></div>
+        </div>
+        <div class="card c6">
+          <div class="card-h"><h2>Falls from the high point</h2><button class="info" data-i="mdd" type="button">i</button><span class="spacer"></span><button class="btn small ghost" data-table="dd" type="button">Show as table</button></div>
+          <p class="sub" id="rk-dd-sub"></p>
+          <div class="chart" id="rk-dd"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- GUIDE -->
+    <section class="view" id="v-guide">
+      <div class="grid">
+        <div class="card c6 prose">
+          <div class="card-h"><h2>How to read this dashboard</h2></div>
+          <ul>
+            <li><strong>Overview</strong> answers "what is it all worth and how is it doing?"</li>
+            <li><strong>Holdings</strong> lists every position, who owns it and which account it is in.</li>
+            <li><strong>Activity</strong> is the list of purchases and sales that everything else is built from.</li>
+            <li><strong>Allocation</strong> shows what the money is spread across.</li>
+            <li><strong>Risk</strong> shows how bumpy the ride could be and which holdings drive that.</li>
+            <li>The filter row at the top changes every number on every tab. Press the small <em>i</em> next to any figure for an explanation.</li>
+          </ul>
+        </div>
+        <div class="card c6 prose">
+          <div class="card-h"><h2>What is simulated in this demo</h2></div>
+          <ul>
+            <li>The family (Alex, Sam and Jo), their positions and what they paid.</li>
+            <li>Every price, the exchange rate, dividend yields and a year of price history. Tickers are real so you can see how yours will look, but the numbers are not.</li>
+            <li>Anything you import or add is kept in this browser only. The live site will save it for the whole family.</li>
+            <li>If you import a symbol that is not one of the sample tickers, the demo invents a price for it, starting from your latest purchase price, and guesses its currency from the ticker.</li>
+            <li>Cost in pounds for US holdings uses today's exchange rate. The live site can record the rate on the purchase date.</li>
+          </ul>
+        </div>
+        <div class="card c12 prose" style="max-width:none">
+          <div class="card-h"><h2>Feeding in a portfolio</h2></div>
+          <p>Keep one spreadsheet with a row for every purchase or sale, then press <strong>Import activity sheet</strong>. The first row must be headings. Four columns are needed and four are optional:</p>
+          <div class="tablewrap"><table>
+            <thead><tr><th>Column</th><th>Needed?</th><th>What goes in it</th><th>Example</th></tr></thead>
+            <tbody>
+              <tr><td>Date</td><td>Yes</td><td>The day of the trade. Day first, or year-month-day.</td><td>12/03/2024</td></tr>
+              <tr><td>Symbol</td><td>Yes</td><td>The Yahoo Finance ticker. London shares end in .L</td><td>AAPL, SHEL.L</td></tr>
+              <tr><td>Quantity</td><td>Yes</td><td>Number of shares or units.</td><td>25</td></tr>
+              <tr><td>Price</td><td>Yes</td><td>Price paid per share, in pounds or dollars.</td><td>171.50</td></tr>
+              <tr><td>Type</td><td>No</td><td>Buy or Sell. Blank means Buy.</td><td>Buy</td></tr>
+              <tr><td>Owner</td><td>No</td><td>Whose holding it is.</td><td>Alex</td></tr>
+              <tr><td>Account</td><td>No</td><td>ISA, SIPP, GIA and so on.</td><td>ISA</td></tr>
+              <tr><td>Currency</td><td>No</td><td>GBP, USD, or GBX if the price is in pence.</td><td>GBX</td></tr>
+            </tbody></table></div>
+        </div>
+        <div class="c12 gloss" id="gd-gloss"></div>
+      </div>
+    </section>
+  </main>
+  <footer>For information only. This is not financial advice. Rules of thumb shown here are general guides and may not suit your circumstances.</footer>
+</div>
+
+<div id="tip" role="status"></div>
+<div id="pop" role="dialog" aria-label="Explanation"></div>
+<div id="toast" role="status"><span id="toast-t"></span><button type="button" id="toast-undo">Undo</button></div>
+
+<div class="overlay" id="ovl">
+  <form class="dialog" id="addform" novalidate>
+    <h2>Add a transaction</h2>
+    <p class="sub" style="margin:0">One purchase or sale. It joins the activity sheet and every figure updates.</p>
+    <div class="form">
+      <label class="field full">Ticker<input id="a-ticker" list="a-tickers" placeholder="e.g. AAPL or SHEL.L" autocomplete="off" required><datalist id="a-tickers"></datalist></label>
+      <div class="resolved full" id="a-resolved"></div>
+      <label class="field">Type<select id="a-side"><option value="buy">Buy</option><option value="sell">Sell</option></select></label>
+      <label class="field">Date<input id="a-date" type="date" required></label>
+      <label class="field">Owner<select id="a-person"></select></label>
+      <label class="field">Account<select id="a-account"></select></label>
+      <label class="field full" id="a-newwrap" hidden>New person's name<input id="a-newperson" maxlength="30" autocomplete="off"></label>
+      <label class="field">Quantity<input id="a-qty" type="number" min="0" step="any" inputmode="decimal" required></label>
+      <label class="field"><span id="a-costlabel">Price per share</span><input id="a-cost" type="number" min="0" step="any" inputmode="decimal" required></label>
+      <div class="err full" id="a-err" role="alert"></div>
+      <div class="actions full"><button class="btn" type="button" id="a-cancel">Cancel</button><button class="btn primary" type="submit">Add transaction</button></div>
+    </div>
+  </form>
+</div>
+
+<div class="overlay" id="ovl2">
+  <div class="dialog" style="width:min(640px,100%)">
+    <h2>Import an activity sheet</h2>
+    <p class="sub" style="margin:0">One row per purchase or sale. The first row must be headings. Needed: <strong>Date, Symbol, Quantity, Price</strong>. Optional: Type (Buy or Sell), Owner, Account, Currency.</p>
+    <div class="form">
+      <label class="field full">Choose a file (.csv or .xlsx)<input id="i-file" type="file" accept=".csv,.tsv,.txt,.xlsx,.xls"></label>
+      <label class="field full">Or paste rows copied from Excel or Google Sheets<textarea id="i-paste" rows="4" spellcheck="false" placeholder="Date, Symbol, Quantity, Price, Type, Owner, Account"></textarea></label>
+      <label class="field">Owner for rows with no owner<input id="i-person" maxlength="30" value="Me" autocomplete="off"></label>
+      <label class="field">Account for rows with no account<select id="i-account"></select></label>
+      <fieldset class="field full" style="border:0;padding:0;margin:0"><legend style="padding:0;margin-bottom:4px">What to do with the rows already here</legend>
+        <label class="radio"><input type="radio" name="i-mode" value="replace" checked> Replace them with this sheet</label>
+        <label class="radio"><input type="radio" name="i-mode" value="add"> Keep them and add this sheet</label></fieldset>
+      <div class="full preview" id="i-preview"></div>
+      <div class="actions full"><button class="btn ghost" type="button" id="i-template" style="margin-right:auto">Copy a blank template</button><button class="btn" type="button" id="i-cancel">Cancel</button><button class="btn primary" type="button" id="i-go" disabled>Import</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============ SETTINGS: the things you are most likely to change ============ */
+const SETTINGS={
+  accounts:["ISA","SIPP","GIA","LISA","Junior ISA"],   // account types offered in the forms, in display order
+  defaultPeople:["Alex","Sam","Jo"],                    // the sample family (demo only)
+  tickSeconds:4,                                        // how often prices refresh on screen
+  // Cut-offs for the risk checks, written as fractions: 0.10 means 10%
+  largestWarn:.10, largestHigh:.20,                     // one holding's share of the total
+  top5Warn:.40,    top5High:.60,                        // the five biggest holdings combined
+  sectorWarn:.30,                                       // one sector's share of the total
+  volLow:.10,      volHigh:.18,                         // yearly volatility: below = calm, above = bumpy
+  betaLow:.8,      betaHigh:1.2,                        // beta: below = dampens the market, above = amplifies it
+  corrLow:.3,      corrHigh:.6                          // average correlation: below = well mixed, above = moves as one
+};
+
+/* ============ helpers ============ */
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+function H(tag,attrs,...kids){const e=document.createElement(tag);if(attrs)for(const k in attrs){const v=attrs[k];if(v==null||v===false)continue;if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k==="style")e.style.cssText=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?"":v);}kids.flat().forEach(k=>{if(k!=null&&k!==false)e.append(k)});return e;}
+function S(tag,attrs,...kids){const e=document.createElementNS(NS,tag);if(attrs)for(const k in attrs){const v=attrs[k];if(v==null)continue;if(k==="text")e.textContent=v;else if(k==="style")e.style.cssText=v;else e.setAttribute(k,v);}kids.flat().forEach(k=>{if(k!=null)e.append(k)});return e;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function gaussOf(r){return()=>{let u=0,v=0;while(u===0)u=r();while(v===0)v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)}}
+const sum=a=>a.reduce((x,y)=>x+y,0), mean=a=>a.length?sum(a)/a.length:0;
+function cov(a,b){const ma=mean(a),mb=mean(b);let s=0;for(let i=0;i<a.length;i++)s+=(a[i]-ma)*(b[i]-mb);return a.length>1?s/(a.length-1):0}
+const sd=a=>Math.sqrt(cov(a,a));
+function corr(a,b){const d=sd(a)*sd(b);return d?cov(a,b)/d:0}
+function quantile(a,q){const s=[...a].sort((x,y)=>x-y);const p=(s.length-1)*q,lo=Math.floor(p),hi=Math.ceil(p);return s[lo]+(s[hi]-s[lo])*(p-lo)}
+function niceTicks(min,max,n){const span=(max-min)||1,s0=span/n,mag=Math.pow(10,Math.floor(Math.log10(s0))),nm=s0/mag;const step=(nm<1.5?1:nm<3?2:nm<7?5:10)*mag;const lo=Math.floor(min/step+1e-9)*step,hi=Math.ceil(max/step-1e-9)*step;const t=[];for(let v=lo;v<=hi+step*1e-6;v+=step)t.push(+v.toFixed(10));return t}
+
+/* ============ sample catalogue (real tickers, made-up numbers) ============ */
+// ticker, name, type, sector, region, currency, price, yield %, beta, own yearly volatility
+const CAT=[
+ ["AAPL","Apple","Share","Technology","United States","USD",228.40,0.5,1.15,.20],
+ ["MSFT","Microsoft","Share","Technology","United States","USD",431.10,0.7,1.05,.18],
+ ["NVDA","Nvidia","Share","Technology","United States","USD",139.80,0.1,1.70,.36],
+ ["GOOGL","Alphabet","Share","Communication","United States","USD",176.20,0.4,1.10,.22],
+ ["AMZN","Amazon","Share","Consumer","United States","USD",201.50,0,1.20,.24],
+ ["JPM","JPMorgan Chase","Share","Financials","United States","USD",241.30,2.1,1.00,.18],
+ ["JNJ","Johnson & Johnson","Share","Healthcare","United States","USD",155.60,3.1,.55,.14],
+ ["KO","Coca-Cola","Share","Consumer staples","United States","USD",63.20,3.0,.50,.13],
+ ["BRK-B","Berkshire Hathaway","Share","Financials","United States","USD",468.90,0,.80,.12],
+ ["SHEL.L","Shell","Share","Energy","United Kingdom","GBP",26.48,4.0,.80,.20],
+ ["AZN.L","AstraZeneca","Share","Healthcare","United Kingdom","GBP",114.60,2.0,.50,.20],
+ ["HSBA.L","HSBC","Share","Financials","United Kingdom","GBP",7.42,6.5,.90,.20],
+ ["ULVR.L","Unilever","Share","Consumer staples","United Kingdom","GBP",45.10,3.4,.50,.14],
+ ["LLOY.L","Lloyds Banking Group","Share","Financials","United Kingdom","GBP",0.624,5.0,1.10,.24],
+ ["BP.L","BP","Share","Energy","United Kingdom","GBP",4.21,5.5,.85,.24],
+ ["RR.L","Rolls-Royce","Share","Industrials","United Kingdom","GBP",5.62,0.5,1.40,.30],
+ ["GSK.L","GSK","Share","Healthcare","United Kingdom","GBP",14.52,4.0,.50,.17],
+ ["LGEN.L","Legal & General","Share","Financials","United Kingdom","GBP",2.31,8.5,1.00,.20],
+ ["VWRL.L","Vanguard FTSE All-World ETF","ETF","Mixed (funds)","Global","GBP",108.20,1.5,1.00,.03],
+ ["VUSA.L","Vanguard S&P 500 ETF","ETF","Mixed (funds)","United States","GBP",88.35,1.0,1.02,.04],
+ ["ISF.L","iShares Core FTSE 100 ETF","ETF","Mixed (funds)","United Kingdom","GBP",8.21,3.5,.75,.06],
+ ["IGLT.L","iShares Core UK Gilts ETF","ETF","Bonds (funds)","United Kingdom","GBP",10.31,4.0,.08,.07],
+ ["SMT.L","Scottish Mortgage Investment Trust","Investment trust","Mixed (funds)","Global","GBP",9.78,0.4,1.40,.22],
+ ["CTY.L","City of London Investment Trust","Investment trust","Mixed (funds)","United Kingdom","GBP",4.42,4.8,.80,.08],
+ ["FSMITH","Fundsmith Equity I Acc","Fund","Mixed (funds)","Global","GBP",7.12,0,.85,.07],
+ ["VLS80","Vanguard LifeStrategy 80% Equity","Fund","Mixed (funds)","Global","GBP",295.40,0,.80,.03]
+];
+const INS={};CAT.forEach(c=>INS[c[0]]={t:c[0],n:c[1],type:c[2],sector:c[3],region:c[4],ccy:c[5],px0:c[6],y:c[7],beta:c[8],idio:c[9]});
+const ACCOUNTS=[...SETTINGS.accounts];
+const SLOTS=["var(--s1)","var(--s2)","var(--s3)","var(--s4)","var(--s5)","var(--s6)"];
+const accColor=a=>SLOTS[ACCOUNTS.indexOf(a)]||"var(--deemph)";   // colour follows the account, not its rank
+// ticker, person, account, quantity, cost as a fraction of today's price
+const SAMPLE=[
+ ["VWRL.L","Alex","ISA",420,.78],["AAPL","Alex","ISA",60,.62],["MSFT","Alex","ISA",25,.71],["SHEL.L","Alex","ISA",900,.93],["SMT.L","Alex","ISA",2500,1.12],
+ ["VUSA.L","Alex","SIPP",600,.74],["FSMITH","Alex","SIPP",4500,.88],["AZN.L","Alex","SIPP",110,.97],["IGLT.L","Alex","SIPP",3000,1.08],
+ ["NVDA","Alex","GIA",150,.41],["LLOY.L","Alex","GIA",30000,.83],["RR.L","Alex","GIA",2500,.52],
+ ["VLS80","Sam","ISA",120,.86],["ULVR.L","Sam","ISA",300,1.04],["HSBA.L","Sam","ISA",2500,.79],["GOOGL","Sam","ISA",40,.69],
+ ["VWRL.L","Sam","SIPP",300,.84],["CTY.L","Sam","SIPP",6000,.95],["JNJ","Sam","SIPP",50,1.03],["GSK.L","Sam","SIPP",800,1.09],
+ ["AMZN","Sam","GIA",30,.73],["BP.L","Sam","GIA",4000,1.15],
+ ["VUSA.L","Jo","ISA",150,.90],["NVDA","Jo","ISA",40,.66],["ISF.L","Jo","ISA",2000,.92],
+ ["KO","Jo","GIA",100,.96],["LGEN.L","Jo","GIA",5000,1.02]
+];
+
+/* ============ simulated history (the live site replaces this with real price history) ============ */
+const N=262;               // daily closes kept
+const R={}, CLOSE={};      // R[t][i] = return in pounds from close i-1 to i
+let BENCH=[], FXC=[], DATES=[];
+const FACT={uk:[],bond:[],sec:{}};
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+function buildSeries(ins){ // a year of made-up daily prices for one instrument, ending at ins.px0
+  const g=gaussOf(mulberry32(hashStr(ins.t)));const local=new Array(N).fill(0);
+  if(!FACT.sec[ins.sector]){const gs=gaussOf(mulberry32(hashStr("sector:"+ins.sector)));FACT.sec[ins.sector]=Array.from({length:N},()=>gs()*.005)}
+  for(let i=1;i<N;i++){
+    let r=ins.beta*BENCH[i]+g()*ins.idio/Math.sqrt(252);
+    if(ins.sector==="Bonds (funds)")r+=FACT.bond[i];
+    else if(ins.type==="Share"){r+=.5*FACT.sec[ins.sector][i];if(ins.region==="United Kingdom")r+=FACT.uk[i];}
+    local[i]=r;}
+  const cl=new Array(N);cl[N-1]=ins.px0;for(let i=N-1;i>0;i--)cl[i-1]=cl[i]/(1+local[i]);
+  CLOSE[ins.t]=cl;
+  R[ins.t]=local.map((r,i)=>i===0?0:(ins.ccy==="USD"?(1+r)*(FXC[i-1]/FXC[i])-1:r));
+}
+(function sim(){
+  const g=gaussOf(mulberry32(20261111));const fxr=[];
+  for(let i=0;i<N;i++){BENCH.push(.0004+g()*.0085);FACT.uk.push(g()*.004);FACT.bond.push(.0001+g()*.004);fxr.push(g()*.0045);}
+  FXC=new Array(N);FXC[N-1]=1.30;for(let i=N-1;i>0;i--)FXC[i-1]=FXC[i]/(1+fxr[i]);
+  CAT.forEach(c=>buildSeries(INS[c[0]]));
+  const d=new Date();d.setHours(12,0,0,0);const out=[];   // trading days ending yesterday
+  while(out.length<N){d.setDate(d.getDate()-1);if(d.getDay()!==0&&d.getDay()!==6)out.push(new Date(d));}
+  DATES=out.reverse();
+})();
+
+/* ============ live prices (simulated feed; the live site swaps this for Yahoo Finance) ============ */
+const live={px:{},prev:{},fx:1.30,fxPrev:1.30,moved:{},at:new Date(),paused:false};
+function initLivePx(t){const cl=CLOSE[t],g=gaussOf(mulberry32(hashStr("live:"+t)));
+  if(INS[t].type==="Fund"){live.px[t]=cl[N-1];live.prev[t]=cl[N-2];}
+  else{live.prev[t]=cl[N-1];live.px[t]=cl[N-1]*(1+g()*.006);}}
+(function initLive(){
+  Object.keys(INS).forEach(initLivePx);
+  const g=gaussOf(mulberry32(7));live.fxPrev=FXC[N-1];live.fx=FXC[N-1]*(1+g()*.002);
+})();
+// A symbol the demo has no sample data for: invent an instrument priced from the purchase price.
+// On the live site this is where Yahoo Finance supplies the name, currency, sector and price.
+function ensureInstrument(sym,price,ccy){
+  if(INS[sym])return INS[sym];
+  const uk=/\.L$/.test(sym);
+  const ins=INS[sym]={t:sym,n:sym,type:"Share",sector:"Not classified",region:uk?"United Kingdom":"United States",ccy:ccy||(uk?"GBP":"USD"),px0:price>0?price:1,y:0,beta:1,idio:.22,made:true};
+  buildSeries(ins);initLivePx(sym);return ins;
+}
+function tick(){
+  const g=gaussOf(Math.random);live.moved={};
+  Object.keys(INS).forEach(t=>{if(INS[t].type==="Fund"||Math.random()<.45)return;const k=1+g()*.0007;live.px[t]*=k;live.moved[t]=k>1?1:-1;});
+  live.fx*=1+g()*.0002;live.at=new Date();
+}
+
+/* ============ state: the activity sheet is the source of truth; positions are worked out from it ============ */
+const KEY="family-portfolio-demo-v2";
+const state={view:"overview",person:"all",account:"all",period:252,ccy:"GBP",sort:{k:"value",dir:-1},q:"",group:"holding",tables:{},realised:[]};
+let people=[], txns=[], positions=[], nextId=1;
+// one transaction: {id, date:"YYYY-MM-DD", t:ticker, side:"buy"|"sell", qty, price (pounds or dollars per share), person, account}
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const daysAgo=n=>{const d=new Date();d.setDate(d.getDate()-n);return iso(d)};
+const dateOf=s=>new Date(s+"T12:00:00");
+function seed(){ // turn the SAMPLE positions into a made-up activity sheet
+  people=[...SETTINGS.defaultPeople];txns=[];
+  SAMPLE.forEach((s,i)=>{const px=INS[s[0]].px0*s[4],n=1+i%3,base=90+(i*53)%500,each=Math.floor(s[3]/n);
+    for(let k=0;k<n;k++)txns.push({id:nextId++,date:daysAgo(base+(n-1-k)*160),t:s[0],side:"buy",qty:k===0?s[3]-each*(n-1):each,price:+(px*(n===1?1:1+(k-(n-1)/2)*.06)).toFixed(4),person:s[1],account:s[2]})});
+  const bp=INS["BP.L"].px0;
+  txns.push({id:nextId++,date:daysAgo(640),t:"BP.L",side:"buy",qty:1000,price:+(bp*1.15).toFixed(4),person:"Sam",account:"GIA"},{id:nextId++,date:daysAgo(45),t:"BP.L",side:"sell",qty:1000,price:+(bp*1.04).toFixed(4),person:"Sam",account:"GIA"});
+}
+function derive(){ // average-cost method: a sale removes shares at the average price paid so far
+  const m=new Map();
+  [...txns].sort((a,b)=>a.date<b.date?-1:a.date>b.date?1:a.id-b.id).forEach(x=>{
+    const k=x.t+"|"+x.person+"|"+x.account;let p=m.get(k);
+    if(!p){p={id:k,t:x.t,person:x.person,account:x.account,qty:0,tot:0,first:x.date,buys:0,realised:0};m.set(k,p)}
+    if(x.side==="sell"){const q=Math.min(x.qty,p.qty),avg=p.qty?p.tot/p.qty:0;p.realised+=q*(x.price-avg);p.tot-=q*avg;p.qty-=q;if(p.qty<1e-9){p.qty=0;p.tot=0}}
+    else{if(p.qty===0)p.first=x.date;p.qty+=x.qty;p.tot+=x.qty*x.price;p.buys++}
+  });
+  state.realised=[...m.values()];
+  positions=state.realised.filter(p=>p.qty>1e-9);positions.forEach(p=>p.cost=p.tot/p.qty);
+}
+function save(){derive();try{localStorage.setItem(KEY,JSON.stringify({people,txns,accounts:ACCOUNTS,made:Object.values(INS).filter(i=>i.made).map(i=>[i.t,i.px0,i.ccy])}))}catch(e){}}
+function load(){try{const d=JSON.parse(localStorage.getItem(KEY)||"null");if(d&&Array.isArray(d.txns)&&Array.isArray(d.people)){
+  people=d.people.map(String);txns=d.txns.filter(x=>x&&x.t&&x.qty>0&&x.price>=0&&x.date);
+  (d.accounts||[]).forEach(a=>{if(!ACCOUNTS.includes(a))ACCOUNTS.push(String(a))});
+  (d.made||[]).forEach(m=>ensureInstrument(String(m[0]),+m[1],m[2]==="USD"?"USD":"GBP"));
+  txns.forEach(x=>ensureInstrument(x.t,x.price));nextId=Math.max(0,...txns.map(x=>x.id||0))+1;return true}}catch(e){}return false}
+if(!load())seed();
+derive();
+
+/* ============ formatting ============ */
+function money(g,o){o=o||{};const usd=state.ccy==="USD";const v=usd?g*live.fx:g;const dp=o.dp||0;const a=Math.abs(v).toLocaleString("en-GB",{minimumFractionDigits:dp,maximumFractionDigits:dp});return(v<0?"−":(o.sign&&v>0?"+":""))+(usd?"$":"£")+a}
+function pct(x,dp,sign){dp=dp==null?1:dp;const v=x*100;return(v<0?"−":(sign&&v>0?"+":""))+Math.abs(v).toFixed(dp)+"%"}
+function nativePx(px,ccy){if(ccy==="USD")return"$"+px.toFixed(2);if(px<10)return(px*100).toFixed(1)+"p";return"£"+px.toFixed(2)}
+const fmtDate=(d,y)=>d.toLocaleDateString("en-GB",y?{day:"numeric",month:"short",year:"numeric"}:{day:"numeric",month:"short"});
+const PERIOD={21:"1 month",63:"3 months",126:"6 months",252:"1 year"};
+function delta(v,text){const cls=v>1e-9?"up":v<-1e-9?"down":"flat";return H("span",{class:"delta "+cls},(v>1e-9?"▲ ":v<-1e-9?"▼ ":"")+text)}
+
+/* ============ analysis ============ */
+function scope(){return positions.filter(p=>(state.person==="all"||p.person===state.person)&&(state.account==="all"||p.account===state.account))}
+function analyse(){
+  const rows=scope().map(p=>{const ins=INS[p.t];const k=ins.ccy==="USD"?1/live.fx:1,kp=ins.ccy==="USD"?1/live.fxPrev:1;
+    const value=p.qty*live.px[p.t]*k,cost=p.qty*p.cost*k,prevV=p.qty*live.prev[p.t]*kp;
+    return{p,ins,value,cost,gain:value-cost,gainPct:cost?value/cost-1:0,day:value-prevV,dayPct:live.px[p.t]/live.prev[p.t]-1,income:value*ins.y/100}});
+  const total=sum(rows.map(r=>r.value)),cost=sum(rows.map(r=>r.cost)),day=sum(rows.map(r=>r.day)),income=sum(rows.map(r=>r.income));
+  rows.forEach(r=>r.w=total?r.value/total:0);
+  const tm=new Map();rows.forEach(r=>{let x=tm.get(r.p.t);if(!x){x={t:r.p.t,ins:r.ins,value:0,cost:0};tm.set(r.p.t,x)}x.value+=r.value;x.cost+=r.cost});
+  const tick=[...tm.values()].sort((a,b)=>b.value-a.value);tick.forEach(x=>x.w=total?x.value/total:0);
+  const W=state.period,i0=N-W;const A={rows,total,cost,day,income,tick,W,gain:total-cost,gainPct:cost?total/cost-1:0,dayPct:(total-day)?day/(total-day):0};
+  if(!rows.length)return A;
+  const rp=[],rb=[];for(let i=i0;i<N;i++){let s=0;for(const x of tick)s+=x.w*R[x.t][i];rp.push(s);rb.push(BENCH[i]);}
+  A.rp=rp;A.rb=rb;A.dates=DATES.slice(i0-1);
+  const lev=[100],lb=[100];rp.forEach((r,i)=>{lev.push(lev[i]*(1+r));lb.push(lb[i]*(1+rb[i]))});A.lev=lev;A.lb=lb;
+  let peak=-Infinity;A.dd=lev.map(v=>{peak=Math.max(peak,v);return v/peak-1});A.mdd=Math.min(...A.dd);
+  const vr=cov(rp,rp);A.vol=Math.sqrt(vr)*Math.sqrt(252);A.beta=cov(rp,rb)/cov(rb,rb);
+  A.var95=-quantile(rp,.05);
+  tick.forEach(x=>{x.series=R[x.t].slice(i0);x.rc=vr?x.w*cov(x.series,rp)/vr:0;x.vol=sd(x.series)*Math.sqrt(252)});
+  A.hhi=sum(tick.map(x=>x.w*x.w));A.effn=A.hhi?1/A.hhi:0;A.top5=sum(tick.slice(0,5).map(x=>x.w));
+  const top=tick.slice(0,10);A.corrT=top;A.corr=top.map(a=>top.map(b=>a===b?1:corr(a.series,b.series)));
+  let cs=0,cn=0;for(let i=0;i<tick.length;i++)for(let j=i+1;j<tick.length;j++){cs+=corr(tick[i].series,tick[j].series);cn++}A.avgCorr=cn?cs/cn:0;
+  const rcOf={};tick.forEach(x=>rcOf[x.t]=x);rows.forEach(r=>{const x=rcOf[r.p.t];r.rc=x.value?x.rc*r.value/x.value:0});
+  return A;
+}
+function groupBy(A,fn){const m=new Map();A.rows.forEach(r=>{const k=fn(r);let x=m.get(k);if(!x){x={k,value:0,rc:0};m.set(k,x)}x.value+=r.value;x.rc+=r.rc||0});const out=[...m.values()];out.forEach(x=>x.w=A.total?x.value/A.total:0);return out.sort((a,b)=>b.value-a.value)}
+function flags(A){
+  const f=[],top=A.tick[0];
+  f.push({level:top.w>=SETTINGS.largestHigh?"serious":top.w>=SETTINGS.largestWarn?"warning":"good",t:"Largest holding is "+pct(top.w)+" of the total",d:top.ins.n+". "+(top.w>=SETTINGS.largestWarn?"A big move in this one holding would be felt across everything.":"No single holding dominates.")});
+  f.push({level:A.top5>=SETTINGS.top5High?"serious":A.top5>=SETTINGS.top5Warn?"warning":"good",t:"Top five holdings make up "+pct(A.top5),d:A.top5>=SETTINGS.top5Warn?"A large part of the result depends on a handful of names.":"The money is spread across many holdings."});
+  const sec=groupBy(A,r=>r.ins.sector).filter(s=>!/funds|Not classified/.test(s.k))[0];
+  if(sec)f.push({level:sec.w>=SETTINGS.sectorWarn?"warning":"good",t:sec.k+" is the biggest single-share sector at "+pct(sec.w),d:sec.w>=SETTINGS.sectorWarn?"Shares in one industry often rise and fall together.":"No one industry dominates the single shares."});
+  const out=A.tick.filter(x=>x.rc>.08&&x.rc>1.5*x.w).sort((a,b)=>(b.rc-b.w)-(a.rc-a.w))[0];
+  if(out)f.push({level:"warning",t:out.ins.n+" carries more risk than its size suggests",d:pct(out.w)+" of the value but "+pct(out.rc)+" of the ups and downs."});
+  const usd=sum(A.rows.filter(r=>r.ins.ccy==="USD").map(r=>r.w));
+  f.push({level:"note",t:pct(usd)+" is priced in US dollars",d:"These holdings also move when the pound rises or falls against the dollar."});
+  return f;
+}
+const ICON={good:"✓",warning:"!",serious:"▲",note:"i"};
+
+/* ============ explanations ============ */
+const G={
+ total:{h:"Total value",w:"What everything in view is worth right now, using the latest price for each holding. US holdings are converted at the current exchange rate.",r:"It changes through the day as prices move."},
+ day:{h:"Today's change",w:"How much the value has moved since yesterday's closing prices.",r:"One day's move says very little on its own. Funds only reprice once a day, so they show their latest daily move."},
+ gain:{h:"Gain since purchase",w:"Today's value minus what was paid for the holdings still owned.",r:"It leaves out dividends that were paid out as cash and anything already sold.",k:"A paper gain or loss only becomes real when you sell."},
+ income:{h:"Estimated yearly income",w:"A rough guide to the dividends these holdings might pay over a year, based on each one's recent dividend yield.",r:"Dividends can be cut or raised, so treat this as an estimate.",k:"Yield = yearly dividends ÷ current value."},
+ weight:{h:"Weight",w:"A holding's share of the total. A 10% weight means £10 of every £100 is in that holding.",r:"The bigger the weight, the more that holding's fortunes decide the overall result."},
+ perf:{h:"How today's mix has moved",w:"Both lines start at 100 so they can be compared. A reading of 110 means up 10% over the period; 95 means down 5%.",r:"It shows how the holdings you own today would have moved, so it won't match your real history exactly if you bought or sold along the way.",k:"The grey line is a yardstick: a broad index of world shares."},
+ flags:{h:"Risk checks",w:"Simple tests that turn the risk numbers into sentences: is too much riding on one holding, one industry or one currency?",r:"A tick means the test found nothing notable. An exclamation mark means it is worth a look, not that anything is wrong.",k:"The cut-offs are common rules of thumb (for example, one holding above 10%). They are not advice."},
+ accounts:{h:"Account types",w:"ISA: a tax-free wrapper for savings and investments. SIPP: a personal pension you manage yourself. GIA: an ordinary investment account with no tax shelter.",r:"The same share can sit in more than one account. The coloured bar shows how each person's money splits across their accounts."},
+ type:{h:"Investment type",w:"A share is a slice of one company. ETFs, funds and investment trusts each hold many investments inside one holding.",r:"Pooled investments are usually more spread out than single shares, so the same weight carries less single-company risk."},
+ currency:{h:"Currency",w:"The currency a holding is priced in. A US share can rise in dollars but be worth less in pounds if the dollar weakens.",r:"A fund priced in pounds can still own overseas companies, so this shows the direct currency exposure only."},
+ sector:{h:"Sector",w:"The industry a company belongs to, such as technology or banks.",r:"Companies in the same industry tend to rise and fall together, so a lot in one sector is a form of concentration. Funds are shown as one mixed group here."},
+ region:{h:"Region",w:"Where a holding is focused: a single country or the whole world.",r:"Spreading across regions means one country's economy matters less."},
+ largest:{h:"Largest holding",w:"The weight of the single biggest holding.",r:"If it fell by half, the whole portfolio would fall by half of this percentage.",k:"Rule of thumb: above 10% deserves attention, above 20% is concentrated. A broad fund is less of a worry than a single share."},
+ top5:{h:"Top five holdings",w:"The combined weight of the five biggest holdings.",r:"The higher this is, the more a few names decide the outcome.",k:"Rule of thumb: under 40% is well spread, over 60% is concentrated."},
+ effn:{h:"Effective number of holdings",w:"How many equal-sized holdings would give the same spread. Twenty holdings with most of the money in three behaves more like five.",r:"Compare it with the real number of holdings. A big gap means a few positions dominate."},
+ vol:{h:"Volatility",w:"How bumpy the ride has been, scaled to a year. Around 15% means that swings of roughly 15% up or down over a year would be normal.",r:"Higher means bigger swings both ways. It measures bumpiness, not whether you will make or lose money.",k:"As a guide: cash is near 0%, world shares are often around 15%, single shares often 25% or more."},
+ beta:{h:"Beta",w:"How strongly the portfolio moves when the wider share market moves. 1.0 means in step with the market.",r:"1.2 means it tends to move about 12% when the market moves 10%, up or down. 0.8 means about 8%.",k:"Above 1 amplifies the market, below 1 dampens it."},
+ mdd:{h:"Worst fall",w:"The biggest drop from a high point to the following low during the period.",r:"It answers \"how bad did it get?\" The chart shows how far below its previous high the portfolio sat on each day; 0% means it was at a new high.",k:"A 20% fall needs a 25% rise to get back to where it was."},
+ var:{h:"Daily value at risk",w:"On 19 days out of 20, the loss was smaller than this amount. On the remaining 1 day in 20, it was bigger.",r:"It is a sense of an ordinary bad day, not the most you could lose.",k:"Based on how today's holdings moved over the period."},
+ corr:{h:"Correlation",w:"A score from −1 to +1 for how closely two holdings move together. +1: always together. 0: no link. −1: opposite directions.",r:"Red squares are pairs that move together, so owning both adds less spread than it seems. Pale or blue squares are pairs that balance each other.",k:"Lower average correlation means better diversification."},
+ activity:{h:"Activity sheet",w:"The list of every purchase and sale: the date, the symbol, how many, the price, whose it is and which account it sits in.",r:"Holdings, values, gains and risk are all worked out from these rows, so adding a row is all it takes to update everything.",k:"When some shares are sold, the gain is measured against the average price paid for them."},
+ riskshare:{h:"Share of risk",w:"How much of the portfolio's ups and downs come from each holding. It depends on size, on how jumpy the holding is, and on how much it moves with everything else.",r:"Where the dark bar is longer than the light bar, that holding adds more risk than its size suggests. Where it is shorter, it is steadying the portfolio.",k:"A jumpy share at 5% of the value can easily be 10% of the risk."}
+};
+
+/* ============ floating layers ============ */
+const tip=$("tip"),pop=$("pop");
+function showTip(x,y,title,rows){tip.textContent="";if(title)tip.append(H("div",{class:"tt",text:title}));rows.forEach(r=>tip.append(H("div",{class:"row"},H("span",null,r.color?H("i",{class:"key-line",style:"background:"+r.color}):null,r.label),H("b",{text:r.value}))));tip.style.display="block";const w=tip.offsetWidth,h=tip.offsetHeight;let L=x+14,T=y+14;if(L+w>innerWidth-8)L=x-w-14;if(T+h>innerHeight-8)T=y-h-14;tip.style.left=Math.max(8,L)+"px";tip.style.top=Math.max(8,T)+"px"}
+function hideTip(){tip.style.display="none"}
+function hover(el,title,rows){el.addEventListener("pointermove",e=>showTip(e.clientX,e.clientY,title,rows()));el.addEventListener("pointerleave",hideTip);el.addEventListener("focus",()=>{const b=el.getBoundingClientRect();showTip(b.left+b.width/2,b.bottom,title,rows())});el.addEventListener("blur",hideTip)}
+let popBtn=null;
+function closePop(){pop.style.display="none";if(popBtn)popBtn.setAttribute("aria-expanded","false");popBtn=null}
+function openPop(btn){const g=G[btn.dataset.i];if(!g)return;if(popBtn===btn){closePop();return}closePop();popBtn=btn;btn.setAttribute("aria-expanded","true");pop.textContent="";pop.append(H("h3",{text:g.h}),H("p",{text:g.w}),H("p",{text:g.r}));if(g.k)pop.append(H("p",{class:"thumb",text:g.k}));pop.style.display="block";const b=btn.getBoundingClientRect(),w=pop.offsetWidth,h=pop.offsetHeight;let L=Math.min(Math.max(8,b.left-20),innerWidth-w-8),T=b.bottom+8;if(T+h>innerHeight-8)T=Math.max(8,b.top-h-8);pop.style.left=L+"px";pop.style.top=T+"px"}
+document.addEventListener("click",e=>{const b=e.target.closest(".info");if(b){openPop(b);return}if(!e.target.closest("#pop"))closePop()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closePop();closeForm();closeImport()}});
+addEventListener("scroll",closePop,{passive:true});
+const infoBtn=k=>H("button",{class:"info",type:"button","data-i":k,"aria-label":"What does "+G[k].h+" mean?","aria-expanded":"false"},"i");
+let toastTimer=null,undoFn=null;
+function toast(msg,undo){$("toast-t").textContent=msg;undoFn=undo||null;$("toast-undo").style.display=undo?"":"none";$("toast").style.display="flex";clearTimeout(toastTimer);toastTimer=setTimeout(()=>$("toast").style.display="none",6000)}
+$("toast-undo").addEventListener("click",()=>{if(undoFn)undoFn();$("toast").style.display="none"});
+
+/* ============ chart builders ============ */
+function lineChart(el,c){
+  el.textContent="";const W=Math.max(300,el.clientWidth||600),Hh=c.height||270,m={l:44,r:c.endLabels?74:14,t:14,b:26};
+  const n=c.dates.length;let all=c.series.flatMap(s=>s.values),lo=Math.min(...all),hi=Math.max(...all);if(c.top!=null)hi=c.top;
+  const ticks=niceTicks(lo,hi,4);lo=Math.min(lo,ticks[0]);hi=c.top!=null?c.top:ticks[ticks.length-1];lo=ticks[0];
+  const pw=W-m.l-m.r,ph=Hh-m.t-m.b,x=i=>m.l+pw*i/(n-1),y=v=>m.t+ph*(1-(v-lo)/(hi-lo));
+  const svg=S("svg",{viewBox:"0 0 "+W+" "+Hh,role:"img","aria-label":c.label,tabindex:"0"});
+  ticks.filter(t=>t<=hi+1e-9).forEach(t=>{svg.append(S("line",{x1:m.l,x2:W-m.r,y1:y(t),y2:y(t),class:t===c.base?"axisl":"gridl"}),S("text",{x:m.l-8,y:y(t)+4,"text-anchor":"end",text:c.yFmt(t)}))});
+  let idx=[];if(n<=30){for(let i=0;i<n;i+=5)idx.push(i)}else{for(let i=1;i<n;i++)if(c.dates[i].getMonth()!==c.dates[i-1].getMonth())idx.push(i);while(idx.length>7)idx=idx.filter((_,k)=>k%2===0)}
+  idx.forEach(i=>{const X=x(i);if(X<m.l+12||X>W-m.r-12)return;const d=c.dates[i];svg.append(S("text",{x:X,y:Hh-6,"text-anchor":"middle",text:n<=30?fmtDate(d):d.toLocaleDateString("en-GB",{month:"short"})+(d.getMonth()===0?" "+String(d.getFullYear()).slice(2):"")}))});
+  c.series.forEach(s=>{const pts=s.values.map((v,i)=>x(i).toFixed(1)+","+y(v).toFixed(1));
+    if(c.area)svg.append(S("polygon",{points:pts.join(" ")+" "+x(n-1)+","+y(c.top!=null?c.top:lo)+" "+x(0)+","+y(c.top!=null?c.top:lo),style:"fill:"+s.color+";opacity:.10"}));
+    svg.append(S("polyline",{points:pts.join(" "),fill:"none","stroke-width":s.w||2,"stroke-linejoin":"round","stroke-linecap":"round",style:"stroke:"+s.color}))});
+  if(c.endLabels){const ends=c.series.map(s=>({s,y:y(s.values[n-1]),v:s.values[n-1]}));
+    if(ends.length===2&&Math.abs(ends[0].y-ends[1].y)<15){const up=ends[0].y<=ends[1].y?0:1,mid=(ends[0].y+ends[1].y)/2;ends[up].ly=mid-8;ends[1-up].ly=mid+8}
+    ends.forEach(e=>{svg.append(S("circle",{cx:x(n-1),cy:e.y,r:4,"stroke-width":2,style:"fill:"+e.s.color+";stroke:var(--surface)"}),S("text",{x:x(n-1)+10,y:(e.ly!=null?e.ly:e.y)+4,class:"lab strong",text:c.yFmt(e.v)}))})}
+  const cross=S("line",{y1:m.t,y2:Hh-m.b,class:"cross",style:"display:none"}),dots=c.series.map(s=>S("circle",{r:4,"stroke-width":2,style:"display:none;fill:"+s.color+";stroke:var(--surface)"}));
+  svg.append(cross,...dots);let cur=n-1;
+  function at(i,cx,cy){cur=Math.max(0,Math.min(n-1,i));cross.setAttribute("x1",x(cur));cross.setAttribute("x2",x(cur));cross.style.display="";dots.forEach((d,k)=>{d.setAttribute("cx",x(cur));d.setAttribute("cy",y(c.series[k].values[cur]));d.style.display=""});showTip(cx,cy,fmtDate(c.dates[cur],true),c.series.map(s=>({label:s.name,value:c.tipFmt(s.values[cur]),color:s.color})))}
+  function off(){cross.style.display="none";dots.forEach(d=>d.style.display="none");hideTip()}
+  svg.addEventListener("pointermove",e=>{const b=svg.getBoundingClientRect();const px=(e.clientX-b.left)*W/b.width;at(Math.round((px-m.l)/pw*(n-1)),e.clientX,e.clientY)});
+  svg.addEventListener("pointerleave",off);svg.addEventListener("blur",off);
+  svg.addEventListener("keydown",e=>{if(e.key!=="ArrowLeft"&&e.key!=="ArrowRight")return;e.preventDefault();const b=svg.getBoundingClientRect();const i=cur+(e.key==="ArrowLeft"?-1:1);const ii=Math.max(0,Math.min(n-1,i));at(ii,b.left+x(ii)*b.width/W,b.top+b.height/2)});
+  el.append(svg);
+}
+function rankedBars(el,items,o){ // items: {name, w, value}
+  el.textContent="";const max=Math.max(...items.map(i=>i.w),1e-9);
+  items.forEach(it=>{const tr=H("div",{class:"track",tabindex:"0",role:"img","aria-label":it.name+" "+pct(it.w)},H("div",{class:"bar",style:"width:"+(it.w/max*100).toFixed(1)+"%"}));
+    hover(tr,it.name,()=>[{label:"Value",value:money(it.value)},{label:"Share of total",value:pct(it.w)}]);
+    el.append(H("div",{class:"name",text:it.name}),tr,H("div",{class:"fig num"},H("b",{text:pct(it.w)}),o&&o.money?" · "+money(it.value):""))});
+}
+function pairBars(el,items){ // items: {name, w, rc}
+  el.textContent="";const max=Math.max(...items.flatMap(i=>[i.w,i.rc]),1e-9);
+  items.forEach(it=>{const tr=H("div",{class:"track pair",tabindex:"0",role:"img","aria-label":it.name+": "+pct(it.w)+" of value, "+pct(it.rc)+" of risk"},
+      H("div",{class:"bar a",style:"width:"+(Math.max(0,it.w)/max*100).toFixed(1)+"%"}),H("div",{class:"bar b",style:"width:"+(Math.max(0,it.rc)/max*100).toFixed(1)+"%"}));
+    hover(tr,it.name,()=>[{label:"Share of value",value:pct(it.w),color:"var(--seq-a)"},{label:"Share of risk",value:pct(it.rc),color:"var(--seq-b)"}]);
+    el.append(H("div",{class:"name",text:it.name}),tr,H("div",{class:"fig num"},pct(it.w)+" → ",H("b",{text:pct(it.rc)})))});
+}
+const short=t=>t.replace(/\.L$/,"");
+function heatmap(el,A){
+  el.textContent="";const T=A.corrT,n=T.length;if(n<2){el.append(H("div",{class:"empty",text:"Add at least two holdings to compare how they move."}));return}
+  const W=Math.max(300,el.clientWidth||520),L=58,top=22,cell=Math.min(46,Math.floor((W-L)/n)),g=2,Hh=top+cell*n;
+  const svg=S("svg",{viewBox:"0 0 "+W+" "+Hh,role:"img","aria-label":"Correlation between the ten largest holdings"});
+  T.forEach((a,i)=>{svg.append(S("text",{x:L-8,y:top+i*cell+cell/2+4,"text-anchor":"end",class:"lab",text:short(a.t)}));svg.append(S("text",{x:L+i*cell+cell/2,y:14,"text-anchor":"middle",text:cell>=40?short(a.t):short(a.t).slice(0,4)}))});
+  T.forEach((a,i)=>T.forEach((b,j)=>{const v=A.corr[i][j];const fill=i===j?"var(--sunken)":"color-mix(in oklab, "+(v>=0?"var(--div-pos)":"var(--div-neg)")+" "+Math.round(Math.min(1,Math.abs(v))*100)+"%, var(--div-mid))";
+    const r=S("rect",{x:L+j*cell+g/2,y:top+i*cell+g/2,width:cell-g,height:cell-g,rx:3,style:"fill:"+fill,tabindex:i===j?null:"0"});
+    if(i!==j)hover(r,a.ins.n+" and "+b.ins.n,()=>[{label:"Correlation",value:v.toFixed(2)},{label:"In words",value:v>.6?"Move closely together":v>.3?"Often move together":v>-.1?"Little link":"Tend to offset"}]);
+    svg.append(r)}));
+  el.append(svg);
+}
+function tableOf(head,rows){return H("div",{class:"tablewrap",style:"max-height:300px;overflow:auto"},H("table",null,H("thead",null,H("tr",null,head.map((h,i)=>H("th",{class:i?"r":"",text:h})))),H("tbody",null,rows.map(r=>H("tr",null,r.map((c,i)=>H("td",{class:i?"r":"",text:c})))))))}
+
+/* ============ views ============ */
+function tile(cls,label,key,value,foot){return H("div",{class:"card tile "+cls},H("div",{class:"label"},label,key?infoBtn(key):null),H("div",{class:"value"},value),foot?H("div",{class:"foot"},foot):null)}
+function chip(level,text){return H("span",{class:"chip "+level},H("i",{text:ICON[level]||"i"}),text)}
+function renderFlags(el,A,limit){el.textContent="";flags(A).slice(0,limit||9).forEach(f=>el.append(H("li",{class:f.level},H("span",{class:"ico","aria-hidden":"true",text:ICON[f.level]}),H("span",{class:"t",text:f.t}),H("span",{class:"d",text:f.d}))))}
+function emptyInto(...ids){ids.forEach(id=>{const e=$(id);e.textContent="";e.append(H("div",{class:"empty",text:"No positions match this filter."}))})}
+
+const VIEWS={
+ overview(A){
+  const hero=$("ov-hero");hero.textContent="";
+  const who=(state.person==="all"?"Whole family":state.person)+(state.account==="all"?"":" · "+state.account);
+  hero.append(H("div",{class:"label"},"Total value · "+who,infoBtn("total")),H("div",{class:"value",text:money(A.total)}),
+    H("div",{class:"meta"},delta(A.day,money(A.day,{sign:true})+" ("+pct(A.dayPct,2,true)+")"),H("span",{text:"today"}),infoBtn("day")),
+    H("div",{class:"meta",style:"margin-top:10px"},H("span",{text:"£1 = $"+live.fx.toFixed(4)+" (simulated)"})));
+  const tl=$("ov-tiles");tl.textContent="";
+  const accs=new Set(A.rows.map(r=>r.p.person+"/"+r.p.account)).size;
+  tl.append(
+    tile("c6","Gain since purchase","gain",H("span",null,money(A.gain,{sign:true})),delta(A.gain,pct(A.gainPct,1,true)+" on "+money(A.cost)+" paid")),
+    tile("c6","Estimated yearly income","income",money(A.income),"About "+pct(A.total?A.income/A.total:0)+" of the value"),
+    tile("c6","Holdings",null,String(A.tick.length),A.rows.length+" positions across "+accs+" account"+(accs===1?"":"s")),
+    tile("c6",PERIOD[A.W]+" move, today's mix","perf",A.lev?pct(A.lev[A.lev.length-1]/100-1,1,true):"–",A.lb?"Index "+pct(A.lb[A.lb.length-1]/100-1,1,true):""));
+  if(!A.rows.length){emptyInto("ov-perf","ov-who","ov-top");$("ov-flags").textContent="";$("ov-who-legend").textContent="";$("ov-perf-sub").textContent="";return}
+  $("ov-perf-sub").textContent="Last "+PERIOD[A.W]+" to yesterday's close. Both lines start at 100.";
+  const pe=$("ov-perf");
+  if(state.tables.perf){pe.textContent="";const rows=[];for(let i=A.dates.length-1;i>=0;i-=5)rows.push([fmtDate(A.dates[i],true),A.lev[i].toFixed(1),A.lb[i].toFixed(1)]);pe.append(tableOf(["Week ending","Your holdings","Index"],rows))}
+  else lineChart(pe,{dates:A.dates,label:"Your holdings against a global share index, both starting at 100",series:[{name:"Index",color:"var(--deemph)",values:A.lb,w:1.5},{name:"Your holdings",color:"var(--s1)",values:A.lev}],yFmt:v=>v.toFixed(v%1?1:0),tipFmt:v=>v.toFixed(1),base:100,endLabels:true});
+  renderFlags($("ov-flags"),A,4);
+  // who holds what
+  const accsIn=ACCOUNTS.filter(a=>A.rows.some(r=>r.p.account===a)),ppl=people.filter(p=>A.rows.some(r=>r.p.person===p));
+  const lg=$("ov-who-legend");lg.textContent="";accsIn.forEach(a=>lg.append(H("span",null,H("i",{class:"key-box",style:"background:"+accColor(a)}),a)));
+  const val=(p,a)=>sum(A.rows.filter(r=>(p==null||r.p.person===p)&&(a==null||r.p.account===a)).map(r=>r.value));
+  const body=ppl.map(p=>{const t=val(p,null);const bar=H("div",{class:"segbar",role:"img","aria-label":p+" split by account"},accsIn.filter(a=>val(p,a)>0).map(a=>H("span",{style:"flex:"+val(p,a)+" 0 0;background:"+accColor(a)})));
+    return H("tr",null,H("td",{class:"hname",text:p}),H("td",null,bar),accsIn.map(a=>H("td",{class:"r",text:val(p,a)?money(val(p,a)):"–"})),H("td",{class:"r"},H("b",{text:money(t)})),H("td",{class:"r",text:pct(A.total?t/A.total:0)}))});
+  const w=$("ov-who");w.textContent="";
+  w.append(H("table",null,H("thead",null,H("tr",null,H("th",{text:"Person"}),H("th",{text:"Split"}),accsIn.map(a=>H("th",{class:"r",text:a})),H("th",{class:"r",text:"Total"}),H("th",{class:"r",text:"Share"}))),H("tbody",null,body),
+    H("tfoot",null,H("tr",null,H("td",{text:"All"}),H("td"),accsIn.map(a=>H("td",{class:"r",text:money(val(null,a))})),H("td",{class:"r",text:money(A.total)}),H("td",{class:"r",text:"100%"})))));
+  rankedBars($("ov-top"),A.tick.slice(0,7).map(x=>({name:x.ins.n,w:x.w,value:x.value})),{money:true});
+ },
+ holdings(A){
+  const q=state.q.trim().toLowerCase();let rows=A.rows.filter(r=>!q||r.ins.n.toLowerCase().includes(q)||r.p.t.toLowerCase().includes(q));
+  const keyf={name:r=>r.ins.n.toLowerCase(),person:r=>r.p.person.toLowerCase(),account:r=>r.p.account,qty:r=>r.p.qty,day:r=>r.dayPct,value:r=>r.value,w:r=>r.w,gain:r=>r.gain}[state.sort.k];
+  rows=[...rows].sort((a,b)=>{const x=keyf(a),y=keyf(b);return(x<y?-1:x>y?1:0)*state.sort.dir});
+  $("h-count").textContent=rows.length+" of "+A.rows.length+" positions";
+  const th=(k,label,r)=>H("th",{class:r?"r":"","aria-sort":state.sort.k===k?(state.sort.dir>0?"ascending":"descending"):"none"},H("button",{type:"button",onclick:()=>{state.sort=state.sort.k===k?{k,dir:-state.sort.dir}:{k,dir:(k==="name"||k==="person"||k==="account")?1:-1};render()}},label,state.sort.k===k?(state.sort.dir>0?" ↑":" ↓"):""));
+  const el=$("h-table");el.textContent="";
+  if(!rows.length){el.append(H("div",{class:"empty",text:A.rows.length?"Nothing matches that search.":"No positions match this filter."}));return}
+  el.append(H("table",null,
+    H("thead",null,H("tr",null,th("name","Holding"),th("person","Owner"),th("account","Account"),th("qty","Quantity",1),H("th",{class:"r",text:"Price"}),th("day","Today",1),th("value","Value",1),th("w","Weight",1),th("gain","Gain / loss",1),H("th",null,H("span",{style:"position:absolute;left:-9999px",text:"Remove"})))),
+    H("tbody",null,rows.map(r=>{const mv=live.moved[r.p.t];return H("tr",null,
+      H("td",null,H("div",{class:"hname"},r.ins.n,r.ins.type!=="Share"?H("span",{class:"tag",text:r.ins.type}):null),H("div",{class:"hmeta",text:r.p.t+" · "+r.ins.ccy+(r.ins.type==="Fund"?" · priced daily":"")+(r.ins.made?" · demo price":"")+" · since "+fmtDate(dateOf(r.p.first),true)+(r.p.buys>1?" · "+r.p.buys+" buys":"")})),
+      H("td",{text:r.p.person}),H("td",{text:r.p.account}),
+      H("td",{class:"r",text:r.p.qty.toLocaleString("en-GB",{maximumFractionDigits:4})}),
+      H("td",{class:"r"+(mv?(mv>0?" tick-up":" tick-down"):""),text:nativePx(live.px[r.p.t],r.ins.ccy)}),
+      H("td",{class:"r"},delta(r.dayPct,pct(r.dayPct,2,true))),
+      H("td",{class:"r",text:money(r.value)}),H("td",{class:"r",text:pct(r.w)}),
+      H("td",{class:"r"},delta(r.gain,money(r.gain,{sign:true})+" ("+pct(r.gainPct,1,true)+")")),
+      H("td",{class:"r"},H("button",{class:"x",type:"button","aria-label":"Remove "+r.ins.n+" ("+r.p.person+", "+r.p.account+")",onclick:()=>removePos(r.p.id)},"Remove")))})),
+    H("tfoot",null,H("tr",null,H("td",{text:"Total shown"}),H("td"),H("td"),H("td"),H("td"),H("td"),H("td",{class:"r",text:money(sum(rows.map(r=>r.value)))}),H("td",{class:"r",text:pct(sum(rows.map(r=>r.w)))}),H("td",{class:"r",text:money(sum(rows.map(r=>r.gain)),{sign:true})}),H("td")))));
+ },
+ allocation(A){
+  if(!A.rows.length){emptyInto("al-type","al-ccy","al-sector","al-region");return}
+  const TY={Share:"Single shares",ETF:"ETFs",Fund:"Funds","Investment trust":"Investment trusts"},CC={GBP:"Pounds (GBP)",USD:"US dollars (USD)"};
+  const put=(id,fn)=>rankedBars($(id),groupBy(A,fn).map(g=>({name:g.k,w:g.w,value:g.value})),{money:true});
+  put("al-type",r=>TY[r.ins.type]);put("al-ccy",r=>CC[r.ins.ccy]);put("al-sector",r=>r.ins.sector);put("al-region",r=>r.ins.region);
+ },
+ risk(A){
+  const tl=$("rk-tiles");tl.textContent="";
+  if(!A.rows.length){emptyInto("rk-rc","rk-corr","rk-dd");$("rk-flags").textContent="";return}
+  const top=A.tick[0],per="over the last "+PERIOD[A.W];
+  tl.append(
+   tile("c3","Largest holding","largest",pct(top.w),chip(top.w>=SETTINGS.largestHigh?"serious":top.w>=SETTINGS.largestWarn?"warning":"good",top.w>=SETTINGS.largestHigh?"Concentrated":top.w>=SETTINGS.largestWarn?"Worth a look":"Not dominant")),
+   tile("c3","Top five holdings","top5",pct(A.top5),chip(A.top5>=SETTINGS.top5High?"serious":A.top5>=SETTINGS.top5Warn?"warning":"good",A.top5>=SETTINGS.top5High?"Concentrated":A.top5>=SETTINGS.top5Warn?"Fairly concentrated":"Well spread")),
+   tile("c3","Effective number of holdings","effn",A.effn.toFixed(1),"Out of "+A.tick.length+" actual holdings"),
+   tile("c3","Average correlation","corr",A.avgCorr.toFixed(2),chip("note",A.avgCorr<SETTINGS.corrLow?"Well mixed":A.avgCorr<SETTINGS.corrHigh?"Some overlap":"Moves as one")),
+   tile("c3","Volatility","vol",pct(A.vol)+" a year",chip("note",A.vol<SETTINGS.volLow?"Calmer than world shares":A.vol<SETTINGS.volHigh?"Similar to world shares":"Bumpier than world shares")),
+   tile("c3","Beta","beta",A.beta.toFixed(2),chip("note",A.beta<SETTINGS.betaLow?"Moves less than the market":A.beta<=SETTINGS.betaHigh?"Moves with the market":"Moves more than the market")),
+   tile("c3","Worst fall","mdd",pct(A.mdd),"Peak to low, "+per),
+   tile("c3","Daily value at risk","var",money(A.var95*A.total),pct(A.var95)+" of the value, 1 day in 20"));
+  $("rk-rc-sub").textContent="Each row compares a share of the money with its share of the ups and downs, "+per+".";
+  const gf={holding:null,sector:r=>r.ins.sector,person:r=>r.p.person,account:r=>r.p.account,ccy:r=>r.ins.ccy==="USD"?"US dollars":"Pounds"}[state.group];
+  const items=(gf?groupBy(A,gf).map(g=>({name:g.k,w:g.w,rc:g.rc})):A.tick.map(x=>({name:x.ins.n,w:x.w,rc:x.rc}))).sort((a,b)=>b.rc-a.rc).slice(0,10);
+  pairBars($("rk-rc"),items);
+  renderFlags($("rk-flags"),A);
+  $("rk-corr-sub").textContent="The ten largest holdings, "+per+". Hover a square for the pair.";
+  const ce=$("rk-corr");
+  if(state.tables.corr){ce.textContent="";ce.append(tableOf(["",...A.corrT.map(x=>short(x.t))],A.corrT.map((x,i)=>[short(x.t),...A.corr[i].map(v=>v.toFixed(2))])))}else heatmap(ce,A);
+  $("rk-dd-sub").textContent="How far below its previous high today's mix sat, "+per+".";
+  const de=$("rk-dd");
+  if(state.tables.dd){de.textContent="";const rows=[];for(let i=A.dates.length-1;i>=0;i-=5)rows.push([fmtDate(A.dates[i],true),pct(A.dd[i])]);de.append(tableOf(["Week ending","Below previous high"],rows))}
+  else lineChart(de,{dates:A.dates,label:"Fall from previous high",series:[{name:"Below previous high",color:"var(--s1)",values:A.dd}],yFmt:v=>pct(v,0),tipFmt:v=>pct(v),top:0,base:0,area:true,height:250});
+ },
+ activity(){
+  const inScope=x=>(state.person==="all"||x.person===state.person)&&(state.account==="all"||x.account===state.account);
+  const rows=txns.filter(inScope).sort((a,b)=>a.date<b.date?1:a.date>b.date?-1:b.id-a.id);
+  const real=sum(state.realised.filter(inScope).map(p=>p.realised*(INS[p.t].ccy==="USD"?1/live.fx:1)));
+  $("ac-sum").textContent=rows.length+" transaction"+(rows.length===1?"":"s")+(rows.length?" · first on "+fmtDate(dateOf(rows[rows.length-1].date),true):"")+" · gains already taken from sales: "+money(real,{sign:true});
+  const el=$("ac-table");el.textContent="";
+  if(!rows.length){el.append(H("div",{class:"empty",text:"No transactions yet. Import an activity sheet or add a transaction."}));return}
+  const cur=x=>INS[x.t].ccy==="USD"?"$":"£",num=v=>v.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+  el.append(H("table",null,
+    H("thead",null,H("tr",null,["Date","Type","Holding","Owner","Account"].map(h=>H("th",{text:h})),["Quantity","Price","Total"].map(h=>H("th",{class:"r",text:h})),H("th"))),
+    H("tbody",null,rows.slice(0,300).map(x=>H("tr",null,
+      H("td",{class:"num",style:"white-space:nowrap",text:fmtDate(dateOf(x.date),true)}),
+      H("td",null,H("span",{class:"tag",style:"margin:0",text:x.side==="sell"?"Sell":"Buy"})),
+      H("td",null,H("div",{class:"hname",text:INS[x.t].n}),INS[x.t].n!==x.t?H("div",{class:"hmeta",text:x.t}):null),
+      H("td",{text:x.person}),H("td",{text:x.account}),
+      H("td",{class:"r",text:x.qty.toLocaleString("en-GB",{maximumFractionDigits:4})}),
+      H("td",{class:"r",text:cur(x)+num(x.price)}),H("td",{class:"r",text:cur(x)+num(x.qty*x.price)}),
+      H("td",{class:"r"},H("button",{class:"x",type:"button","aria-label":"Remove this transaction",onclick:()=>removeTxn(x.id)},"Remove")))))));
+  if(rows.length>300)el.append(H("p",{class:"sub",style:"margin:10px 0 0",text:"Showing the latest 300 of "+rows.length+"."}));
+ },
+ guide(){}
+};
+(function buildGuide(){const el=$("gd-gloss");Object.keys(G).forEach(k=>{const g=G[k];el.append(H("div",{class:"card"},H("h3",{text:g.h}),H("p",{text:g.w}),H("p",{text:g.r}),g.k?H("p",{class:"thumb",text:g.k}):null))})})();
+document.querySelectorAll(".info[data-i]").forEach(b=>{b.setAttribute("aria-label","What does "+G[b.dataset.i].h+" mean?");b.setAttribute("aria-expanded","false")});
+
+/* ============ render loop ============ */
+let hoverLock=false;
+document.addEventListener("pointerover",e=>{hoverLock=!!(e.target.closest&&e.target.closest(".chart,.bars"))});
+function renderChrome(){
+  $("livetext").textContent=(live.paused?"Paused":"Simulated prices")+" · "+live.at.toLocaleTimeString("en-GB");
+  $("livedot").classList.toggle("paused",live.paused);$("pause").textContent=live.paused?"Resume prices":"Pause prices";
+  document.querySelectorAll(".tabs a").forEach(a=>a.dataset.v===state.view?a.setAttribute("aria-current","page"):a.removeAttribute("aria-current"));
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+state.view));
+  $("filters").style.display=state.view==="guide"?"none":"";
+  document.querySelectorAll("#f-period button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.p===state.period)));
+  document.querySelectorAll("#f-ccy button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.c===state.ccy)));
+  document.querySelectorAll("#rk-group button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.g===state.group)));
+  document.querySelectorAll("[data-table]").forEach(b=>b.textContent=state.tables[b.dataset.table]?"Show as chart":"Show as table");
+}
+function fillSelects(){
+  const fp=$("f-person"),fa=$("f-account");fp.textContent="";fa.textContent="";
+  fp.append(H("option",{value:"all",text:"Whole family"}),...people.map(p=>H("option",{value:p,text:p})));
+  const used=ACCOUNTS.filter(a=>positions.some(p=>p.account===a));
+  fa.append(H("option",{value:"all",text:"All accounts"}),...used.map(a=>H("option",{value:a,text:a})));
+  if(state.person!=="all"&&!people.includes(state.person))state.person="all";
+  if(state.account!=="all"&&!used.includes(state.account))state.account="all";
+  fp.value=state.person;fa.value=state.account;
+}
+function render(){hideTip();renderChrome();VIEWS[state.view](analyse())}
+function route(){const h=location.hash.replace("#","");state.view=VIEWS[h]?h:"overview";closePop();render()}
+addEventListener("hashchange",route);
+$("f-person").addEventListener("change",e=>{state.person=e.target.value;render()});
+$("f-account").addEventListener("change",e=>{state.account=e.target.value;render()});
+$("f-period").addEventListener("click",e=>{const b=e.target.closest("button");if(b){state.period=+b.dataset.p;render()}});
+$("f-ccy").addEventListener("click",e=>{const b=e.target.closest("button");if(b){state.ccy=b.dataset.c;render()}});
+$("rk-group").addEventListener("click",e=>{const b=e.target.closest("button");if(b){state.group=b.dataset.g;render()}});
+document.querySelectorAll("[data-table]").forEach(b=>b.addEventListener("click",()=>{state.tables[b.dataset.table]=!state.tables[b.dataset.table];render()}));
+$("h-search").addEventListener("input",e=>{state.q=e.target.value;render()});
+$("pause").addEventListener("click",()=>{live.paused=!live.paused;renderChrome()});
+setInterval(()=>{if(live.paused||document.hidden)return;tick();if(hoverLock||document.querySelector(".overlay.open")){renderChrome();return}render()},SETTINGS.tickSeconds*1000);
+let rz=null;new ResizeObserver(()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!hoverLock)render()},150)}).observe(document.querySelector("main"));
+
+/* ============ add / remove transactions ============ */
+function changed(){save();fillSelects();render()}
+function removePos(id){const p=positions.find(p=>p.id===id);if(!p)return;const before=txns;txns=txns.filter(x=>x.t+"|"+x.person+"|"+x.account!==id);changed();toast("Removed "+INS[p.t].n+" ("+p.person+", "+p.account+") and its transactions.",()=>{txns=before;changed()})}
+function removeTxn(id){const before=txns;txns=txns.filter(x=>x.id!==id);changed();toast("Removed one transaction.",()=>{txns=before;changed()})}
+function openForm(){
+  const dl=$("a-tickers");dl.textContent="";Object.values(INS).forEach(i=>dl.append(H("option",{value:i.t,text:i.n})));
+  const ps=$("a-person");ps.textContent="";ps.append(...people.map(p=>H("option",{value:p,text:p})),H("option",{value:"__new",text:"Add someone new…"}));
+  const as=$("a-account");as.textContent="";as.append(...ACCOUNTS.map(a=>H("option",{value:a,text:a})));
+  if(state.person!=="all")ps.value=state.person;if(state.account!=="all")as.value=state.account;
+  ["a-ticker","a-qty","a-cost","a-newperson"].forEach(i=>$(i).value="");$("a-date").value=iso(new Date());$("a-side").value="buy";$("a-err").textContent="";
+  $("a-newwrap").hidden=ps.value!=="__new";resolveTicker();
+  $("ovl").classList.add("open");$("a-ticker").focus();
+}
+function closeForm(){$("ovl").classList.remove("open")}
+function resolveTicker(){const t=$("a-ticker").value.trim().toUpperCase(),ins=INS[t],el=$("a-resolved");
+  if(ins){el.textContent=ins.n+" · "+ins.type+" · priced in "+ins.ccy+" · now "+nativePx(live.px[t],ins.ccy);$("a-costlabel").textContent="Price per share, in "+(ins.ccy==="USD"?"dollars ($)":"pounds (£)")}
+  else{el.textContent=t?"Not one of the sample tickers, so the demo will invent a price starting from the one you enter. The live site will look it up on Yahoo Finance.":"";$("a-costlabel").textContent="Price per share"}return t}
+$("add").addEventListener("click",openForm);$("a-cancel").addEventListener("click",closeForm);
+$("ovl").addEventListener("pointerdown",e=>{if(e.target===$("ovl"))closeForm()});
+$("a-ticker").addEventListener("input",resolveTicker);
+$("a-person").addEventListener("change",e=>{$("a-newwrap").hidden=e.target.value!=="__new";if(e.target.value==="__new")$("a-newperson").focus()});
+$("addform").addEventListener("submit",e=>{e.preventDefault();const err=$("a-err"),t=resolveTicker();
+  let person=$("a-person").value;const qty=parseFloat($("a-qty").value),price=parseFloat($("a-cost").value),side=$("a-side").value,date=$("a-date").value,account=$("a-account").value;
+  if(!/^[A-Z0-9.\-^=]{1,15}$/.test(t)){err.textContent="Enter a ticker, such as AAPL or SHEL.L.";$("a-ticker").focus();return}
+  if(!date||date>iso(new Date())){err.textContent="Choose a date that is not in the future.";$("a-date").focus();return}
+  if(person==="__new"){person=$("a-newperson").value.trim();if(!person){err.textContent="Type the new person's name.";$("a-newperson").focus();return}}
+  if(!(qty>0)){err.textContent="Quantity must be more than zero.";$("a-qty").focus();return}
+  if(!(price>0)){err.textContent="Enter the price per share or unit.";$("a-cost").focus();return}
+  if(side==="sell"){const held=(positions.find(p=>p.id===t+"|"+person+"|"+account)||{qty:0}).qty;if(qty>held+1e-9){err.textContent=person+" holds "+held.toLocaleString("en-GB")+" of "+t+" in that account, so "+qty.toLocaleString("en-GB")+" cannot be sold.";return}}
+  const ins=ensureInstrument(t,price);
+  if(!people.includes(person))people.push(person);
+  txns.push({id:nextId++,date,t,side,qty,price,person,account});closeForm();changed();
+  toast((side==="sell"?"Sold ":"Bought ")+qty.toLocaleString("en-GB")+" × "+ins.n+" in "+person+"'s "+account+".")});
+
+/* ============ import an activity sheet ============ */
+// Headings the importer recognises for each column. Add your own spelling here if your sheet uses a different one.
+const COLS={
+ date:["date","trade date","purchase date","transaction date","date bought","bought","settlement date"],
+ sym:["symbol","ticker","epic","code","stock","security","instrument"],
+ qty:["quantity","qty","shares","units","no of shares","number of shares","volume"],
+ price:["price","purchase price","price paid","unit price","cost per share","price per share","average price","avg price","buy price"],
+ side:["type","action","side","transaction","transaction type","buy/sell","direction"],
+ person:["owner","person","name","who","holder","family member","account holder"],
+ account:["account","account type","wrapper","account name"],
+ ccy:["currency","ccy","price currency"],
+ total:["total","total cost","value","amount","consideration","cost","net amount"]};
+const TEMPLATE="Date,Symbol,Type,Quantity,Price,Owner,Account,Currency\n2024-03-12,AAPL,Buy,10,171.50,Alex,ISA,USD\n2024-06-03,SHEL.L,Buy,200,28.40,Sam,SIPP,GBP\n2025-01-20,VWRL.L,Buy,50,98.20,Alex,ISA,GBP\n2025-09-02,SHEL.L,Sell,50,26.90,Sam,SIPP,GBP\n";
+function parseDelimited(text){ // comma, tab or semicolon separated text, with quoted cells
+  text=text.replace(/^﻿/,"");const first=text.split(/\r?\n/)[0]||"";
+  const d=first.includes("\t")?"\t":(first.split(";").length>first.split(",").length?";":",");
+  const rows=[];let row=[],cell="",q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++}else q=false}else cell+=c}
+    else if(c==='"')q=true;else if(c===d){row.push(cell);cell=""}
+    else if(c==="\n"||c==="\r"){if(c==="\r"&&text[i+1]==="\n")i++;row.push(cell);rows.push(row);row=[];cell=""}
+    else cell+=c}
+  if(cell!==""||row.length){row.push(cell);rows.push(row)}
+  return rows.filter(r=>r.some(c=>String(c).trim()!==""));
+}
+function toNum(v){if(typeof v==="number")return v;const s=String(v==null?"":v).replace(/[£$€,\s]/g,"").replace(/p$/i,"");if(s==="")return NaN;return /^\(.*\)$/.test(s)?-parseFloat(s.slice(1,-1)):parseFloat(s)}
+const MON={jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
+function toDate(v){ // returns "YYYY-MM-DD" or null. 03/04/2025 is read day first (3 April), the UK way
+  if(v instanceof Date&&!isNaN(v))return iso(v);
+  if(typeof v==="number"&&v>20000&&v<80000)return iso(new Date(Math.round((v-25569)*864e5)+12*36e5));   // Excel's day number
+  const s=String(v==null?"":v).trim();let m;
+  const ok=(y,mo,d)=>{y=+y;mo=+mo;d=+d;if(y<100)y+=2000;const t=new Date(y,mo-1,d);return t.getFullYear()===y&&t.getMonth()===mo-1&&t.getDate()===d?iso(t):null};
+  if(m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))return ok(m[1],m[2],m[3]);
+  if(m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{2,4})/))return ok(m[3],m[2],m[1]);
+  if(m=s.match(/^(\d{1,2})[\s-]([A-Za-z]{3})[A-Za-z]*[\s,-]+(\d{2,4})/))return MON[m[2].toLowerCase()]?ok(m[3],MON[m[2].toLowerCase()],m[1]):null;
+  if(m=s.match(/^([A-Za-z]{3})[A-Za-z]*\s+(\d{1,2}),?\s+(\d{4})/))return MON[m[1].toLowerCase()]?ok(m[3],MON[m[1].toLowerCase()],m[2]):null;
+  return null}
+function normAccount(v){const s=String(v||"").trim();if(!s)return null;const l=s.toLowerCase();
+  const hit=ACCOUNTS.find(a=>a.toLowerCase()===l);if(hit)return hit;
+  if(/junior|jisa/.test(l))return"Junior ISA";if(/lifetime|lisa/.test(l))return"LISA";if(/isa/.test(l))return"ISA";if(/sipp|pension/.test(l))return"SIPP";if(/gia|general|dealing|trading/.test(l))return"GIA";
+  return s.slice(0,24)}
+function readActivity(rows,defPerson,defAccount){ // rows = the sheet as a grid of cells
+  const out={ok:[],skipped:[],notes:[],newSyms:new Set()};
+  let hi=-1,map=null;
+  for(let i=0;i<Math.min(rows.length,15)&&hi<0;i++){const m={};
+    rows[i].forEach((h,j)=>{const k=String(h).toLowerCase().replace(/[()£$.]/g,"").replace(/[_\s]+/g," ").trim();for(const key in COLS)if(m[key]==null&&COLS[key].includes(k)){m[key]=j;break}});
+    if(m.sym!=null&&m.date!=null){hi=i;map=m}}
+  if(hi<0){out.error="Couldn't find the headings. The sheet needs a row of headings that includes Date and Symbol, plus Quantity and Price.";return out}
+  if(map.qty==null&&!(map.total!=null&&map.price!=null)){out.error="Couldn't find a Quantity column.";return out}
+  if(map.price==null&&!(map.total!=null&&map.qty!=null)){out.error="Couldn't find a Price column.";return out}
+  let pence=0;const today=iso(new Date());
+  rows.slice(hi+1).forEach((r,k)=>{const line=hi+k+2,get=key=>map[key]==null?"":r[map[key]];
+    const skip=why=>{out.skipped.push("Row "+line+": "+why)};
+    const sym=String(get("sym")||"").trim().toUpperCase();if(!sym)return skip("no symbol");
+    if(!/^[A-Z0-9.\-^=]{1,15}$/.test(sym))return skip("\""+sym.slice(0,20)+"\" doesn't look like a ticker");
+    const date=toDate(get("date"));if(!date)return skip("couldn't read the date");
+    if(date>today)return skip("the date is in the future");
+    let side="buy";const st=String(get("side")||"").toLowerCase().trim();
+    if(st){if(/sell|sold|sale/.test(st))side="sell";else if(!/buy|bought|purchase/.test(st))return skip("\""+st.slice(0,20)+"\" is not a purchase or a sale")}
+    let qty=toNum(get("qty")),price=toNum(get("price"));const total=Math.abs(toNum(get("total")));
+    if(isNaN(qty)&&total>0&&price>0)qty=total/price;if(isNaN(price)&&total>0&&qty)price=total/Math.abs(qty);
+    if(qty<0){side="sell";qty=-qty}
+    if(!(qty>0))return skip("no quantity");if(!(price>0))return skip("no price");
+    const cc=String(get("ccy")||"").trim();let ccy=null;
+    if(cc==="GBp"||/^(gbx|pence|p)$/i.test(cc)){price/=100;pence++;ccy="GBP"}
+    else if(/^gbp$/i.test(cc)||cc==="£")ccy="GBP";else if(/^usd$/i.test(cc)||cc==="$")ccy="USD";
+    else if(INS[sym]&&!INS[sym].made&&INS[sym].ccy==="GBP"&&price>live.px[sym]*20){price/=100;pence++}   // a London price 20 times too big is almost certainly pence
+    const person=String(get("person")||"").trim().slice(0,30)||defPerson,account=normAccount(get("account"))||defAccount;
+    if(!INS[sym])out.newSyms.add(sym);
+    out.ok.push({date,t:sym,side,qty,price,person,account,ccy})});
+  if(pence)out.notes.push(pence+(pence===1?" price was in pence and was":" prices were in pence and were")+" converted to pounds.");
+  return out}
+let pending=null,lastRows=null;
+function openImport(){const as=$("i-account");as.textContent="";$("i-person").value="Me";
+  as.append(...ACCOUNTS.map(a=>H("option",{value:a,text:a})));as.value=ACCOUNTS.includes("GIA")?"GIA":ACCOUNTS[0];
+  $("i-file").value="";$("i-paste").value="";pending=null;lastRows=null;showPreview();$("ovl2").classList.add("open");$("i-file").focus()}
+function closeImport(){$("ovl2").classList.remove("open")}
+function reparse(){pending=lastRows?readActivity(lastRows,$("i-person").value.trim()||"Me",$("i-account").value):null;showPreview()}
+function showPreview(msg){const el=$("i-preview"),go=$("i-go");el.textContent="";go.disabled=true;go.textContent="Import";
+  if(msg){el.append(H("div",{class:"err",text:msg}));return}
+  if(!pending)return;
+  if(pending.error){el.append(H("div",{class:"err",text:pending.error}));return}
+  const n=pending.ok.length,s=pending.skipped.length;
+  el.append(H("div",null,H("strong",{text:n+" row"+(n===1?"":"s")+" ready"}),s?" · "+s+" skipped":""));
+  const ul=H("ul");pending.skipped.slice(0,4).forEach(t=>ul.append(H("li",{text:t})));if(s>4)ul.append(H("li",{text:"and "+(s-4)+" more"}));
+  pending.notes.forEach(t=>ul.append(H("li",{text:t})));
+  if(pending.newSyms.size){const a=[...pending.newSyms];ul.append(H("li",{text:a.length+(a.length===1?" symbol is not":" symbols are not")+" among the demo's sample tickers, so the demo will invent prices starting from your purchase price: "+a.slice(0,8).join(", ")+(a.length>8?" and more":"")}))}
+  if(ul.children.length)el.append(ul);
+  if(n){go.disabled=false;go.textContent="Import "+n+" row"+(n===1?"":"s")}}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=rej;document.head.append(s)})}
+$("i-file").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;$("i-paste").value="";const excel=/\.xlsx?$/i.test(f.name);
+  try{
+    if(excel){ // Excel files are read with the SheetJS library, fetched only when needed
+      if(!window.XLSX)await loadScript("https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js");
+      const wb=XLSX.read(await f.arrayBuffer());let rows=[];
+      for(const name of wb.SheetNames){rows=XLSX.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:""});if(rows.length>1)break}
+      lastRows=rows.filter(r=>r.some(c=>String(c).trim()!==""));
+    }else lastRows=parseDelimited(await f.text());
+    reparse();
+  }catch(err){lastRows=null;pending=null;showPreview(excel?"Couldn't open that Excel file here. Save it as CSV and try again.":"Couldn't read that file.")}});
+$("i-paste").addEventListener("input",e=>{const t=e.target.value;$("i-file").value="";lastRows=t.trim()?parseDelimited(t):null;reparse()});
+$("i-person").addEventListener("input",reparse);$("i-account").addEventListener("change",reparse);
+$("import").addEventListener("click",openImport);$("i-cancel").addEventListener("click",closeImport);
+$("ovl2").addEventListener("pointerdown",e=>{if(e.target===$("ovl2"))closeImport()});
+$("i-template").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(TEMPLATE);toast("Template copied. Paste it into a blank spreadsheet.")}catch(e){$("i-paste").value=TEMPLATE;lastRows=parseDelimited(TEMPLATE);reparse();toast("Copying is blocked here, so the template is in the box instead.")}});
+$("i-go").addEventListener("click",()=>{if(!pending||!pending.ok.length)return;
+  const before={txns,people:[...people]},replace=document.querySelector('input[name="i-mode"]:checked').value==="replace";
+  [...pending.ok].sort((a,b)=>a.date<b.date?1:-1).forEach(x=>ensureInstrument(x.t,x.price,x.ccy));   // newest price first, so a new symbol starts from the latest purchase
+  const add=pending.ok.map(x=>({id:nextId++,date:x.date,t:x.t,side:x.side,qty:x.qty,price:x.price,person:x.person,account:x.account}));
+  txns=replace?add:txns.concat(add);if(replace)people=[];
+  add.forEach(x=>{if(!people.includes(x.person))people.push(x.person);if(!ACCOUNTS.includes(x.account))ACCOUNTS.push(x.account)});
+  state.person="all";state.account="all";closeImport();changed();
+  toast("Imported "+add.length+" row"+(add.length===1?"":"s")+".",()=>{txns=before.txns;people=before.people;changed()})});
+function toCSV(){const q=v=>/[",\n]/.test(v)?'"'+String(v).replace(/"/g,'""')+'"':v;
+  return"Date,Symbol,Type,Quantity,Price,Owner,Account,Currency\n"+[...txns].sort((a,b)=>a.date<b.date?-1:1).map(x=>[x.date,x.t,x.side==="sell"?"Sell":"Buy",x.qty,x.price,q(x.person),q(x.account),INS[x.t].ccy].join(",")).join("\n")+"\n"}
+$("ac-copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText(toCSV());toast("Copied "+txns.length+" rows. Paste them into a spreadsheet.")}catch(e){toast("Copying is blocked in this view.")}});
+$("ac-reset").addEventListener("click",()=>{const before={txns,people:[...people]};seed();state.person="all";state.account="all";changed();toast("Back to the sample data.",()=>{txns=before.txns;people=before.people;changed()})});
+
+fillSelects();route();
+</script>
+</body>
+</html>

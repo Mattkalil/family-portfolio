@@ -1,0 +1,5 @@
+Date,Symbol,Type,Quantity,Price,Owner,Account,Currency
+2024-03-12,AAPL,Buy,10,171.50,Alex,ISA,USD
+2024-06-03,SHEL.L,Buy,200,28.40,Sam,SIPP,GBP
+2025-01-20,VWRL.L,Buy,50,98.20,Alex,ISA,GBP
+2025-09-02,SHEL.L,Sell,50,26.90,Sam,SIPP,GBP
